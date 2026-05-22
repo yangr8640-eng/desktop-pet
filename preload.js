@@ -1,0 +1,42 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('petAPI', {
+  // Chat
+  sendMessage: (msg) => ipcRenderer.invoke('send-message', msg),
+  analyzeFile: (filePath) => ipcRenderer.invoke('analyze-file', filePath),
+  getHistory: () => ipcRenderer.invoke('get-history'),
+
+  // Conversations
+  getConversations: () => ipcRenderer.invoke('get-conversations'),
+  getActiveConversationId: () => ipcRenderer.invoke('get-active-conversation-id'),
+  switchConversation: (id) => ipcRenderer.invoke('switch-conversation', id),
+  newConversation: () => ipcRenderer.invoke('new-conversation'),
+  deleteConversation: (id) => ipcRenderer.invoke('delete-conversation', id),
+  clearHistory: () => ipcRenderer.invoke('clear-history'),
+
+  // File import
+  importFile: () => ipcRenderer.invoke('import-file'),
+
+  // API Key
+  saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
+  getApiKey: () => ipcRenderer.invoke('get-api-key'),
+
+  // Search toggle
+  toggleSearch: () => ipcRenderer.invoke('toggle-search'),
+  getSearchEnabled: () => ipcRenderer.invoke('get-search-enabled'),
+
+  // Personality
+  savePersonality: (text) => ipcRenderer.invoke('save-personality', text),
+  getPersonality: () => ipcRenderer.invoke('get-personality'),
+
+  // Window controls
+  openChat: () => ipcRenderer.send('open-chat'),
+  closeChat: () => ipcRenderer.send('close-chat'),
+  moveWindow: (dx, dy) => ipcRenderer.send('move-window', dx, dy),
+  savePosition: (pos) => ipcRenderer.send('save-position', pos),
+  minimizeChat: () => ipcRenderer.send('minimize-chat'),
+  quitApp: () => ipcRenderer.send('quit-app'),
+
+  // Listen for events from main
+  onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb())
+});

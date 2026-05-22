@@ -1,0 +1,56 @@
+{
+  "name": "desktop-pet",
+  "version": "1.0.0",
+  "description": "AI desktop pet - An orange kitten companion for macOS",
+  "main": "main.js",
+  "author": "yangr8640-eng",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yangr8640-eng/desktop-pet"
+  },
+  "keywords": [
+    "desktop-pet",
+    "electron",
+    "ai",
+    "deepseek",
+    "macos",
+    "cat"
+  ],
+  "engines": {
+    "node": ">=18.0.0 <23.0.0"
+  },
+  "scripts": {
+    "start": "unset ELECTRON_RUN_AS_NODE && electron .",
+    "icon": "python3 generate_icon.py",
+    "build": "electron-builder",
+    "prebuild": "npm run icon"
+  },
+  "build": {
+    "appId": "com.desktoppet.cat",
+    "productName": "DesktopPet",
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.entertainment"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "pet/**/*",
+      "chat/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ]
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "electron": "^33.4.0",
+    "electron-builder": "^25.1.8"
+  }
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-left">
+        <span class="header-icon">🐱</span>
+        <span class="header-title">小橘</span>
+      </div>
+      <div class="header-center">
+        <select class="conversation-select" id="conversationSelect"></select>
+      </div>
+      <div class="header-right">
+        <button class="header-btn" id="searchBtn" title="联网搜索">🌐</button>
+        <button class="header-btn" id="settingsBtn" title="设置">⚙️</button>
+        <button class="header-btn" id="newChatBtn" title="开启新对话">💬</button>
+        <button class="header-btn" id="closeBtn" title="关闭">✕</button>
+        <button class="header-btn" id="quitBtn" title="退出桌宠">⏻</button>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-content">
+        <label class="settings-label">DeepSeek API Key</label>
+        <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-...">
+        <button class="settings-save" id="saveKeyBtn">保存</button>
+        <label class="settings-label">个性化语气</label>
+        <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
+        <button class="settings-save" id="savePersonalityBtn">保存</button>
+        <p class="settings-hint">API Key存储在本地，不会上传到任何第三方</p>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-area" id="messagesArea">
+      <div class="welcome-msg">
+        <div class="welcome-icon">🐱</div>
+        <div class="welcome-text">喵~ 我是小橘！</div>
+        <div class="welcome-sub">你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~</div>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <textarea class="chat-input" id="chatInput" placeholder="跟小橘说点什么..." rows="1"></textarea>
+      <button class="import-btn" id="importBtn" title="导入文档">📎</button>
+      <button class="send-btn" id="sendBtn" title="发送">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <script src="chat.js"></script>
+</body>
+</html>

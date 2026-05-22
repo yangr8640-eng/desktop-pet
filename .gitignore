@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.dmg
+*.app
+.DS_Store
+*.log
+.vscode/
+.idea/
+*.swp
+__pycache__/
+*.pyc
+/tmp/pet_icon.iconset/
