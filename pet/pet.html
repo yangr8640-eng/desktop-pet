@@ -59,11 +59,14 @@
 
     .pet-wrapper {
       animation: float 3s ease-in-out infinite;
-      cursor: grab;
       position: relative;
       touch-action: none;
+      pointer-events: none;
     }
-    .pet-wrapper:active { cursor: grabbing; }
+    .cat-interactive {
+      pointer-events: auto;
+      cursor: grab;
+    }
     .pet-wrapper.greeting { animation: greetBounce 0.7s ease-in-out; }
     .pet-wrapper.dragover { animation: none; transform: scale(1.05); }
 
@@ -121,7 +124,7 @@
       <!-- Speech bubble -->
       <div class="speech-bubble" id="speechBubble">嗨~ 🐾</div>
 
-      <svg width="147" height="147" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <svg width="147" height="147" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none">
         <defs>
           <radialGradient id="bodyGrad" cx="40%" cy="35%">
             <stop offset="0%" stop-color="#FFB347"/>
@@ -132,6 +135,8 @@
             <stop offset="100%" stop-color="#FFE0B2"/>
           </radialGradient>
         </defs>
+
+        <g class="cat-interactive">
 
         <!-- Tail -->
         <g transform="translate(155, 100)">
@@ -207,6 +212,8 @@
         <!-- Blush -->
         <ellipse cx="68" cy="112" rx="8" ry="5" fill="#FF9999" opacity="0.4"/>
         <ellipse cx="142" cy="112" rx="8" ry="5" fill="#FF9999" opacity="0.4"/>
+
+        </g>
       </svg>
     </div>
   </div>

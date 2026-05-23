@@ -47,7 +47,7 @@ function getActiveConversation() {
     store.set('activeConversationId', conv.id);
     saveConversations(convs);
   }
-  return conv;
+  return { conv, convs };
 }
 
 function getConversationList() {
@@ -109,19 +109,23 @@ function createPetWindow() {
 /* ─── Chat Window ─── */
 function createChatWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 420;
+  const chatWidth = 360;
+  const chatHeight = Math.round(screenHeight * 0.7);
+  const chatY = Math.round((screenHeight - chatHeight) / 2);
 
   chatWindow = new BrowserWindow({
     width: chatWidth,
-    height: screenHeight,
+    height: chatHeight,
     x: screenWidth,
-    y: 0,
+    y: chatY,
     frame: false,
     resizable: false,
     skipTaskbar: false,
     show: false,
     alwaysOnTop: true,
     hasShadow: true,
+    vibrancy: 'sidebar',
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -148,11 +152,13 @@ function showChatWindow() {
   isChatVisible = true;
 
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 420;
+  const chatWidth = 360;
+  const chatHeight = Math.round(screenHeight * 0.7);
+  const chatY = Math.round((screenHeight - chatHeight) / 2);
   const startX = screenWidth;
   const endX = screenWidth - chatWidth;
 
-  chatWindow.setBounds({ x: startX, y: 0, width: chatWidth, height: screenHeight });
+  chatWindow.setBounds({ x: startX, y: chatY, width: chatWidth, height: chatHeight });
   chatWindow.show();
   chatWindow.focus();
 
@@ -164,9 +170,9 @@ function showChatWindow() {
     const eased = 1 - Math.pow(1 - progress, 3);
     chatWindow.setBounds({
       x: Math.round(startX + (endX - startX) * eased),
-      y: 0,
+      y: chatY,
       width: chatWidth,
-      height: screenHeight
+      height: chatHeight
     });
     if (progress < 1) {
       setTimeout(step, 10);
@@ -180,7 +186,9 @@ function hideChatWindow() {
   isChatVisible = false;
 
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 420;
+  const chatWidth = 360;
+  const chatHeight = Math.round(screenHeight * 0.7);
+  const chatY = Math.round((screenHeight - chatHeight) / 2);
   const startX = screenWidth - chatWidth;
   const endX = screenWidth;
 
@@ -192,9 +200,9 @@ function hideChatWindow() {
     const eased = 1 - Math.pow(1 - progress, 3);
     chatWindow.setBounds({
       x: Math.round(startX + (endX - startX) * eased),
-      y: 0,
+      y: chatY,
       width: chatWidth,
-      height: screenHeight
+      height: chatHeight
     });
     if (progress < 1) {
       setTimeout(step, 10);
@@ -233,6 +241,56 @@ async function callDeepSeek(messages, apiKey) {
 
   const data = await resp.json();
   return data.choices[0].message.content;
+}
+
+/* ─── API Key Validation ─── */
+async function validateApiKey(apiKey) {
+  if (!apiKey || !apiKey.trim()) {
+    return { valid: false, reason: 'no-key' };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const resp = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 1
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (resp.ok || resp.status === 429) {
+      return { valid: true };
+    }
+    if (resp.status === 401 || resp.status === 403) {
+      return { valid: false, reason: 'invalid-key' };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: true, reason: 'network-error' };
+  }
+}
+
+async function generateConversationTitle(userMessage, aiResponse, apiKey) {
+  const summaryPrompt = [
+    { role: 'system', content: '你是一个标题生成器。根据对话内容生成一个简短的标题（10个字以内，不要引号，不要句号）。只输出标题本身，不要任何其他文字。' },
+    { role: 'user', content: `用户: ${userMessage.slice(0, 200)}\n\nAI: ${aiResponse.slice(0, 200)}\n\n请为以上对话生成一个简短标题。` }
+  ];
+  try {
+    return await callDeepSeek(summaryPrompt, apiKey);
+  } catch {
+    return null;
+  }
 }
 
 function buildSystemPrompt(searchContext) {
@@ -359,7 +417,7 @@ ipcMain.handle('send-message', async (_event, message) => {
     return '喵~ 你还没设置API Key呢！请在右上角⚙️设置中输入DeepSeek API Key~';
   }
 
-  const conv = getActiveConversation();
+  const { conv, convs } = getActiveConversation();
   const history = conv.messages || [];
 
   let searchContext = null;
@@ -378,14 +436,15 @@ ipcMain.handle('send-message', async (_event, message) => {
     conv.messages.push({ role: 'user', content: message });
     conv.messages.push({ role: 'assistant', content: reply });
 
-    // Auto-title from first user message
+    // Auto-title via AI summary
     if (conv.title === '新对话') {
-      conv.title = message.slice(0, 20) + (message.length > 20 ? '...' : '');
+      const summary = await generateConversationTitle(message, reply, apiKey);
+      conv.title = summary || message.slice(0, 20) + (message.length > 20 ? '...' : '');
     }
 
     conv.updatedAt = new Date().toISOString();
     if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
-    saveConversations(getConversations());
+    saveConversations(convs);
     return reply;
   } catch (err) {
     return `喵呜... 出错了: ${err.message}`;
@@ -422,15 +481,21 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
 
   try {
     const reply = await callDeepSeek(messages, apiKey);
-    const conv = getActiveConversation();
-    conv.messages.push({ role: 'user', content: `[拖入文件: ${fileName}]\n${maxContent.slice(0, 500)}...` });
+    const { conv, convs } = getActiveConversation();
+    conv.messages.push({ role: 'user', content: `📄 拖入文件: ${fileName}` });
     conv.messages.push({ role: 'assistant', content: reply });
     if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
     if (conv.title === '新对话') {
-      conv.title = `文件分析: ${fileName}`;
+      const summary = await generateConversationTitle(
+        `用户导入文件: ${fileName}`, reply, apiKey
+      );
+      conv.title = summary || `文件分析: ${fileName}`;
     }
     conv.updatedAt = new Date().toISOString();
-    saveConversations(getConversations());
+    saveConversations(convs);
+
+    if (chatWindow) chatWindow.webContents.send('messages-updated');
+
     return reply;
   } catch (err) {
     return `喵呜... 分析文件时出错了: ${err.message}`;
@@ -438,12 +503,20 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
 });
 
 ipcMain.handle('get-history', () => {
-  const conv = getActiveConversation();
+  const { conv } = getActiveConversation();
   return conv.messages || [];
 });
 
 ipcMain.handle('new-conversation', () => {
   const convs = getConversations();
+  const activeId = store.get('activeConversationId');
+  const activeConv = convs.find(c => c.id === activeId);
+
+  // If current conversation is empty, just reuse it — don't create a new one
+  if (activeConv && (!activeConv.messages || activeConv.messages.length === 0)) {
+    return getConversationList();
+  }
+
   const newConv = {
     id: generateId(),
     title: '新对话',
@@ -458,8 +531,15 @@ ipcMain.handle('new-conversation', () => {
 });
 
 ipcMain.handle('clear-history', () => {
-  // Backward compat: same as new-conversation
+  // Backward compat: same logic as new-conversation
   const convs = getConversations();
+  const activeId = store.get('activeConversationId');
+  const activeConv = convs.find(c => c.id === activeId);
+
+  if (activeConv && (!activeConv.messages || activeConv.messages.length === 0)) {
+    return true;
+  }
+
   const newConv = {
     id: generateId(),
     title: '新对话',
@@ -563,6 +643,11 @@ ipcMain.handle('get-personality', () => {
   return store.get('personalityPrompt') || '';
 });
 
+ipcMain.handle('validate-api-key', async () => {
+  const apiKey = store.get('apiKey');
+  return await validateApiKey(apiKey);
+});
+
 ipcMain.on('open-chat', () => {
   if (isChatVisible) {
     hideChatWindow();
@@ -570,6 +655,13 @@ ipcMain.on('open-chat', () => {
     showChatWindow();
     if (chatWindow) chatWindow.webContents.send('focus-input');
   }
+});
+
+ipcMain.on('show-chat', () => {
+  if (!isChatVisible) {
+    showChatWindow();
+  }
+  if (chatWindow) chatWindow.webContents.send('focus-input');
 });
 
 ipcMain.on('close-chat', () => {
@@ -620,6 +712,10 @@ app.whenReady().then(() => {
       store.set('activeConversationId', migratedConv.id);
       store.delete('chatHistory');
     }
+  }
+  // Clean up any leftover chatHistory key from old data model
+  if (store.get('chatHistory') !== undefined) {
+    store.delete('chatHistory');
   }
 
   createPetWindow();

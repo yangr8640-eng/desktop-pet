@@ -3,7 +3,7 @@
 const messagesArea = document.getElementById('messagesArea');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
-const searchBtn = document.getElementById('searchBtn');
+const searchToggle = document.getElementById('searchToggle');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
 const apiKeyInput = document.getElementById('apiKeyInput');
@@ -11,7 +11,9 @@ const saveKeyBtn = document.getElementById('saveKeyBtn');
 const newChatBtn = document.getElementById('newChatBtn');
 const closeBtn = document.getElementById('closeBtn');
 const quitBtn = document.getElementById('quitBtn');
-const conversationSelect = document.getElementById('conversationSelect');
+const conversationDropdown = document.getElementById('conversationDropdown');
+const dropdownToggle = document.getElementById('dropdownToggle');
+const dropdownList = document.getElementById('dropdownList');
 const importBtn = document.getElementById('importBtn');
 const typingDots = document.getElementById('typingDots') || createTypingIndicator();
 const personalityInput = document.getElementById('personalityInput');
@@ -36,6 +38,16 @@ async function init() {
   const key = await window.petAPI.getApiKey();
   apiKeyInput.value = key;
 
+  // Validate API key on startup
+  try {
+    const validation = await window.petAPI.validateApiKey();
+    if (!validation.valid) {
+      showApiKeyWarning(validation.reason);
+    }
+  } catch {
+    // IPC itself fails — don't block
+  }
+
   // Load personality
   const personality = await window.petAPI.getPersonality();
   personalityInput.value = personality;
@@ -48,6 +60,12 @@ async function init() {
 
   // Search toggle
   await initSearchToggle();
+
+  // Listen for external message updates (e.g., file drop analysis)
+  window.petAPI.onMessagesUpdated(async () => {
+    await loadConversationMessages();
+    await refreshConversationSelect();
+  });
 
   // Focus input listener
   window.petAPI.onFocusInput(() => {
@@ -63,22 +81,94 @@ async function refreshConversationSelect() {
   const conversations = await window.petAPI.getConversations();
   const activeId = await window.petAPI.getActiveConversationId();
 
-  conversationSelect.innerHTML = '';
-  if (conversations.length === 0) {
-    const option = document.createElement('option');
-    option.textContent = '新对话';
-    conversationSelect.appendChild(option);
+  // Update toggle text
+  const activeConv = conversations.find(c => c.id === activeId);
+  const toggleText = dropdownToggle.querySelector('.dropdown-toggle-text');
+  toggleText.textContent = activeConv ? (activeConv.title || '新对话') : '新对话';
+
+  // Render dropdown items
+  dropdownList.innerHTML = '';
+  if (conversations.length === 0) return;
+
+  conversations.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = 'dropdown-item' + (conv.id === activeId ? ' active' : '');
+    item.dataset.id = conv.id;
+
+    const title = document.createElement('span');
+    title.className = 'dropdown-item-title';
+    title.textContent = conv.title || '新对话';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'dropdown-item-delete';
+    delBtn.textContent = '✕';
+    delBtn.title = '删除对话';
+    delBtn.dataset.id = conv.id;
+
+    item.appendChild(title);
+    item.appendChild(delBtn);
+    dropdownList.appendChild(item);
+  });
+}
+
+// Toggle dropdown open/close
+dropdownToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = dropdownList.style.display === 'block';
+  if (isOpen) {
+    closeDropdown();
+  } else {
+    dropdownList.style.display = 'block';
+    conversationDropdown.classList.add('open');
+  }
+});
+
+function closeDropdown() {
+  dropdownList.style.display = 'none';
+  conversationDropdown.classList.remove('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!conversationDropdown.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// Handle item click (switch conversation) and delete button click
+dropdownList.addEventListener('click', async (e) => {
+  const deleteBtn = e.target.closest('.dropdown-item-delete');
+  const item = e.target.closest('.dropdown-item');
+
+  if (deleteBtn) {
+    e.stopPropagation();
+    const convId = deleteBtn.dataset.id;
+    if (!convId) return;
+
+    const conversations = await window.petAPI.getConversations();
+    if (conversations.length <= 1) return; // Keep at least one
+
+    const success = await window.petAPI.deleteConversation(convId);
+    if (success) {
+      await refreshConversationSelect();
+      await loadConversationMessages();
+    }
+    closeDropdown();
     return;
   }
 
-  conversations.forEach(conv => {
-    const option = document.createElement('option');
-    option.value = conv.id;
-    option.textContent = conv.title || '新对话';
-    if (conv.id === activeId) option.selected = true;
-    conversationSelect.appendChild(option);
-  });
-}
+  if (item) {
+    const convId = item.dataset.id;
+    if (!convId) return;
+
+    isSwitchingConversation = true;
+    await window.petAPI.switchConversation(convId);
+    await loadConversationMessages();
+    await refreshConversationSelect();
+    isSwitchingConversation = false;
+    closeDropdown();
+  }
+});
 
 async function loadConversationMessages() {
   const history = await window.petAPI.getHistory();
@@ -99,17 +189,6 @@ async function loadConversationMessages() {
 
   messagesArea.scrollTop = messagesArea.scrollHeight;
 }
-
-conversationSelect.addEventListener('change', async () => {
-  if (isSwitchingConversation) return;
-  const newId = conversationSelect.value;
-  if (!newId) return;
-
-  isSwitchingConversation = true;
-  await window.petAPI.switchConversation(newId);
-  await loadConversationMessages();
-  isSwitchingConversation = false;
-});
 
 /* ─── Add message to UI ─── */
 function addMessage(role, content, animate = true) {
@@ -209,27 +288,37 @@ settingsBtn.addEventListener('click', () => {
 /* ─── Search Toggle ─── */
 async function initSearchToggle() {
   isSearchEnabled = await window.petAPI.getSearchEnabled();
-  updateSearchButton();
+  searchToggle.checked = isSearchEnabled;
 
-  searchBtn.addEventListener('click', async () => {
+  searchToggle.addEventListener('change', async () => {
     isSearchEnabled = await window.petAPI.toggleSearch();
-    updateSearchButton();
+    searchToggle.checked = isSearchEnabled;
   });
 }
 
-function updateSearchButton() {
-  if (isSearchEnabled) {
-    searchBtn.classList.add('search-active');
-    searchBtn.title = '联网搜索：开';
+function showApiKeyWarning(reason) {
+  const banner = document.getElementById('apiKeyWarning');
+  const textEl = document.getElementById('warningText');
+  if (!banner || !textEl) return;
+
+  if (reason === 'no-key') {
+    textEl.textContent = '还没设置API Key哦，小橘没法和你聊天~ 请在下方输入你的DeepSeek API Key。';
+  } else if (reason === 'invalid-key') {
+    textEl.textContent = 'API Key好像不对，小橘连不上~ 请检查并重新输入。';
   } else {
-    searchBtn.classList.remove('search-active');
-    searchBtn.title = '联网搜索：关';
+    textEl.textContent = 'API Key可能有问题，请检查后重试~';
   }
+
+  banner.style.display = 'flex';
+  settingsPanel.classList.add('open');
 }
 
 saveKeyBtn.addEventListener('click', async () => {
   const key = apiKeyInput.value.trim();
   await window.petAPI.saveApiKey(key);
+  // Hide API key warning on successful save
+  const warningBanner = document.getElementById('apiKeyWarning');
+  if (warningBanner) warningBanner.style.display = 'none';
   settingsPanel.classList.remove('open');
   saveKeyBtn.textContent = '已保存 ✓';
   saveKeyBtn.style.background = '#4CAF50';

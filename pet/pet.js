@@ -18,7 +18,8 @@ const MOUTH_OPEN = 'M 88 116 Q 105 150 122 116';
 const MOUTH_WIDE = 'M 85 112 Q 105 155 125 112';
 
 /* ─── Hover ─── */
-wrapper.addEventListener('mouseenter', () => {
+wrapper.addEventListener('mouseover', (e) => {
+  if (isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = true;
   wrapper.classList.add('greeting');
   showBubble('嗨~ 🐾');
@@ -30,7 +31,8 @@ wrapper.addEventListener('mouseenter', () => {
   }, 1500);
 });
 
-wrapper.addEventListener('mouseleave', () => {
+wrapper.addEventListener('mouseout', (e) => {
+  if (!isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = false;
   hideBubble();
 });
@@ -100,7 +102,10 @@ document.addEventListener('drop', async (e) => {
   hideBubble();
 
   const file = e.dataTransfer.files[0];
-  if (!file || !file.path) return;
+  if (!file) return;
+
+  const filePath = window.petAPI.getFilePath(file);
+  if (!filePath) return;
 
   // Eating animation
   setMouthOpen(true);
@@ -110,11 +115,14 @@ document.addEventListener('drop', async (e) => {
 
   // Analyze
   showBubble('分析中... 📄');
-  const result = await window.petAPI.analyzeFile(file.path);
-  hideBubble();
-
-  // Open chat to show result
-  window.petAPI.openChat();
+  try {
+    await window.petAPI.analyzeFile(filePath);
+  } catch (err) {
+    console.error('File analysis error:', err);
+  } finally {
+    hideBubble();
+    window.petAPI.showChat();
+  }
 });
 
 /* ─── Mouth animation ─── */

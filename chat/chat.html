@@ -13,10 +13,15 @@
         <span class="header-title">小橘</span>
       </div>
       <div class="header-center">
-        <select class="conversation-select" id="conversationSelect"></select>
+        <div class="custom-dropdown" id="conversationDropdown">
+          <button class="dropdown-toggle" id="dropdownToggle">
+            <span class="dropdown-toggle-text">新对话</span>
+            <span class="dropdown-arrow">▾</span>
+          </button>
+          <div class="dropdown-list" id="dropdownList" style="display:none;"></div>
+        </div>
       </div>
       <div class="header-right">
-        <button class="header-btn" id="searchBtn" title="联网搜索">🌐</button>
         <button class="header-btn" id="settingsBtn" title="设置">⚙️</button>
         <button class="header-btn" id="newChatBtn" title="开启新对话">💬</button>
         <button class="header-btn" id="closeBtn" title="关闭">✕</button>
@@ -27,9 +32,20 @@
     <!-- Settings panel -->
     <div class="settings-panel" id="settingsPanel">
       <div class="settings-content">
+        <div class="api-key-warning" id="apiKeyWarning" style="display:none;">
+          <span class="warning-icon">&#9888;&#65039;</span>
+          <span class="warning-text" id="warningText"></span>
+        </div>
         <label class="settings-label">DeepSeek API Key</label>
         <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-...">
         <button class="settings-save" id="saveKeyBtn">保存</button>
+        <div class="settings-row">
+          <span class="settings-row-label">联网搜索</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="searchToggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <label class="settings-label">个性化语气</label>
         <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
         <button class="settings-save" id="savePersonalityBtn">保存</button>

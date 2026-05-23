@@ -1,9 +1,10 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('petAPI', {
   // Chat
   sendMessage: (msg) => ipcRenderer.invoke('send-message', msg),
   analyzeFile: (filePath) => ipcRenderer.invoke('analyze-file', filePath),
+  getFilePath: (file) => webUtils.getPathForFile(file),
   getHistory: () => ipcRenderer.invoke('get-history'),
 
   // Conversations
@@ -20,6 +21,7 @@ contextBridge.exposeInMainWorld('petAPI', {
   // API Key
   saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
   getApiKey: () => ipcRenderer.invoke('get-api-key'),
+  validateApiKey: () => ipcRenderer.invoke('validate-api-key'),
 
   // Search toggle
   toggleSearch: () => ipcRenderer.invoke('toggle-search'),
@@ -31,6 +33,7 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // Window controls
   openChat: () => ipcRenderer.send('open-chat'),
+  showChat: () => ipcRenderer.send('show-chat'),
   closeChat: () => ipcRenderer.send('close-chat'),
   moveWindow: (dx, dy) => ipcRenderer.send('move-window', dx, dy),
   savePosition: (pos) => ipcRenderer.send('save-position', pos),
@@ -38,5 +41,6 @@ contextBridge.exposeInMainWorld('petAPI', {
   quitApp: () => ipcRenderer.send('quit-app'),
 
   // Listen for events from main
-  onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb())
+  onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb()),
+  onMessagesUpdated: (cb) => ipcRenderer.on('messages-updated', () => cb())
 });
