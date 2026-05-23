@@ -9,8 +9,8 @@
     <!-- Header -->
     <div class="chat-header">
       <div class="header-left">
-        <span class="header-icon">🐱</span>
-        <span class="header-title">小橘</span>
+        <span class="header-icon" id="headerIcon">🧡</span>
+        <span class="header-title" id="headerTitle">小橘</span>
       </div>
       <div class="header-center">
         <div class="custom-dropdown" id="conversationDropdown">
@@ -37,19 +37,35 @@
           <span class="warning-icon">&#9888;&#65039;</span>
           <span class="warning-text" id="warningText"></span>
         </div>
-        <label class="settings-label">DeepSeek API Key</label>
-        <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-...">
-        <button class="settings-save" id="saveKeyBtn">保存</button>
-        <div class="settings-row">
-          <span class="settings-row-label">联网搜索</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="searchToggle">
-            <span class="toggle-slider"></span>
-          </label>
+        <div class="settings-section">
+          <label class="settings-label">DeepSeek API Key</label>
+          <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-...">
+          <button class="settings-save" id="saveKeyBtn">保存</button>
         </div>
-        <label class="settings-label">个性化语气</label>
-        <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
-        <button class="settings-save" id="savePersonalityBtn">保存</button>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-row-label">联网搜索</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="searchToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <label class="settings-label">宠物外观</label>
+          <select class="settings-input" id="themeSelect">
+            <option value="orange">🧡 小橘 (橘猫)</option>
+            <option value="yellow">💛 小奶娃</option>
+          </select>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <label class="settings-label">个性化语气</label>
+          <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
+          <button class="settings-save" id="savePersonalityBtn">保存</button>
+        </div>
         <p class="settings-hint">API Key存储在本地，不会上传到任何第三方</p>
       </div>
     </div>
@@ -57,8 +73,8 @@
     <!-- Messages -->
     <div class="messages-area" id="messagesArea">
       <div class="welcome-msg">
-        <div class="welcome-icon">🐱</div>
-        <div class="welcome-text">喵~ 我是小橘！</div>
+        <div class="welcome-icon" id="welcomeIcon">🧡</div>
+        <div class="welcome-text" id="welcomeText">你好呀~ 我是小橘！</div>
         <div class="welcome-sub">你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~</div>
       </div>
     </div>

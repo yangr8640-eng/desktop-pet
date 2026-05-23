@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld('petAPI', {
   savePersonality: (text) => ipcRenderer.invoke('save-personality', text),
   getPersonality: () => ipcRenderer.invoke('get-personality'),
 
+  // Theme
+  getTheme: () => ipcRenderer.invoke('get-theme'),
+  setTheme: (themeId) => ipcRenderer.invoke('set-theme', themeId),
+  onThemeChanged: (cb) => ipcRenderer.on('theme-changed', (_event, theme) => cb(theme)),
+
   // Window controls
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', width, height),
   openChat: () => ipcRenderer.send('open-chat'),

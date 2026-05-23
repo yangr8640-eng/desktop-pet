@@ -2,7 +2,8 @@
 
 const wrapper = document.getElementById('petWrapper');
 const bubble = document.getElementById('speechBubble');
-const mouthPath = document.getElementById('mouth-path');
+const petNormalImg = document.getElementById('petNormalImg');
+const petMouthOpenImg = document.getElementById('petMouthOpenImg');
 
 /* ─── State ─── */
 let isHovering = false;
@@ -13,16 +14,17 @@ let dragStartY = 0;
 let dragCounter = 0;
 let hoverTimeout = null;
 
-const MOUTH_NORMAL = 'M 90 120 Q 97 128 105 120 Q 113 128 120 120';
-const MOUTH_OPEN = 'M 88 116 Q 105 150 122 116';
-const MOUTH_WIDE = 'M 85 112 Q 105 155 125 112';
+/* ─── Prevent native image drag ─── */
+document.querySelectorAll('.pet-img').forEach(img => {
+  img.addEventListener('dragstart', (e) => e.preventDefault());
+});
 
 /* ─── Hover ─── */
 wrapper.addEventListener('mouseover', (e) => {
   if (isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = true;
   wrapper.classList.add('greeting');
-  showBubble('嗨~ 🐾');
+  showBubble(`嗨~ ${currentThemeEmoji}`);
 
   clearTimeout(hoverTimeout);
   hoverTimeout = setTimeout(() => {
@@ -128,17 +130,11 @@ document.addEventListener('drop', async (e) => {
 /* ─── Mouth animation ─── */
 function setMouthOpen(open) {
   if (open) {
-    mouthPath.setAttribute('d', MOUTH_WIDE);
-    mouthPath.setAttribute('stroke', '#4A0000');
-    mouthPath.setAttribute('stroke-width', '1.5');
-    mouthPath.setAttribute('fill', '#2C1810');
-    mouthPath.setAttribute('fill-opacity', '0.9');
+    petNormalImg.style.display = 'none';
+    petMouthOpenImg.style.display = 'block';
   } else {
-    mouthPath.setAttribute('d', MOUTH_NORMAL);
-    mouthPath.setAttribute('stroke', '#2C1810');
-    mouthPath.setAttribute('stroke-width', '2.2');
-    mouthPath.setAttribute('fill', 'none');
-    mouthPath.setAttribute('fill-opacity', '1');
+    petNormalImg.style.display = 'block';
+    petMouthOpenImg.style.display = 'none';
   }
 }
 
@@ -157,7 +153,23 @@ function sleep(ms) {
 }
 
 /* ─── Random idle behaviors ─── */
-const idleMessages = ['好无聊喵~', '主人呢？🐾', '呼噜噜...', '今天天气真好☀️', '喵~', '...'];
+const idleMessages = ['好无聊呀~', '主人呢？💛', '今天天气真好☀️', '嘻嘻~', '想你啦~', '...'];
+
+let currentThemeEmoji = '🧡';
+
+/* ─── Theme ─── */
+function applyPetTheme(theme) {
+  petNormalImg.src = theme.svgs.normal;
+  petMouthOpenImg.src = theme.svgs.mouthOpen;
+  currentThemeEmoji = theme.emoji;
+}
+
+window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
+
+(async () => {
+  const theme = await window.petAPI.getTheme();
+  applyPetTheme(theme);
+})();
 
 setInterval(() => {
   if (!isHovering && !wrapper.classList.contains('dragover') && !bubble.classList.contains('show')) {

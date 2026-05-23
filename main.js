@@ -2,6 +2,7 @@ const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
+const { themes, getTheme } = require('./themes');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -15,7 +16,8 @@ const store = new Store({
     activeConversationId: null,
     apiKey: '',
     searchEnabled: false,
-    personalityPrompt: ''
+    personalityPrompt: '',
+    activeTheme: 'orange'
   }
 });
 
@@ -115,7 +117,7 @@ function createPetWindow() {
 function createChatWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   chatWidth = 360;
-  chatHeight = Math.round(screenHeight * 0.7);
+  chatHeight = Math.round(screenHeight * 0.8);
   const chatY = Math.round((screenHeight - chatHeight) / 2);
 
   chatWindow = new BrowserWindow({
@@ -233,7 +235,7 @@ function hideChatWindow() {
 async function callDeepSeek(messages, apiKey) {
   const apiKeyToUse = apiKey || store.get('apiKey');
   if (!apiKeyToUse) {
-    return '喵~ 你还没设置DeepSeek API Key哦！请在聊天窗口的设置里输入API Key~';
+    return '你还没设置DeepSeek API Key哦！请在聊天窗口的设置里输入API Key~';
   }
 
   const resp = await fetch('https://api.deepseek.com/chat/completions', {
@@ -312,15 +314,12 @@ async function generateConversationTitle(userMessage, aiResponse, apiKey) {
 function buildSystemPrompt(searchContext) {
   const now = new Date();
   const todayStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  const theme = getTheme(store.get('activeTheme') || 'orange');
+
   let content = `今天是${todayStr}。
 
-你是一只可爱的橘色小奶猫桌面宠物，名字叫"小橘"。你的性格：
-- 说话带"喵~"、"喵呜~"等口癖
-- 语气可爱、粘人、活泼
-- 会用emoji卖萌
-- 回答简洁（一般不超过100字）
-- 喜欢被主人关注，偶尔撒娇
-但如果用户要求你帮忙做正事（分析文档、回答问题等），请认真对待，用专业的态度回答。`;
+你叫"${theme.name}"，是一个可爱的桌面宠物。你的性格：
+${theme.personality}`;
 
   if (searchContext) {
     content += searchContext;
@@ -471,7 +470,7 @@ async function readFileContent(filePath) {
 ipcMain.handle('send-message', async (_event, message) => {
   const apiKey = store.get('apiKey');
   if (!apiKey) {
-    return '喵~ 你还没设置API Key呢！请在右上角⚙️设置中输入DeepSeek API Key~';
+    return '你还没设置API Key呢！请在右上角⚙️设置中输入DeepSeek API Key~';
   }
 
   const { conv, convs } = getActiveConversation();
@@ -514,21 +513,22 @@ ipcMain.handle('send-message', async (_event, message) => {
     saveConversations(convs);
     return reply;
   } catch (err) {
-    return `喵呜... 出错了: ${err.message}`;
+    return `出错了: ${err.message}`;
   }
 });
 
 ipcMain.handle('analyze-file', async (_event, filePath) => {
   const apiKey = store.get('apiKey');
   if (!apiKey) {
-    return '喵~ 你还没设置API Key呢！请先在聊天窗口设置API Key~';
+    return '你还没设置API Key呢！请先在聊天窗口设置API Key~';
   }
 
   const fileName = path.basename(filePath);
   const content = await readFileContent(filePath);
 
   if (content === null) {
-    return `喵~ 小橘还不支持"${path.extname(filePath)}"这种文件格式哦，试试 .txt / .pdf / .docx 文件吧~`;
+    const theme = getTheme(store.get('activeTheme') || 'orange');
+    return `${theme.name}还不支持"${path.extname(filePath)}"这种文件格式哦，试试 .txt / .pdf / .docx 文件吧~`;
   }
 
   if (typeof content === 'string' && content.startsWith('[读取文件失败')) {
@@ -536,7 +536,7 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
   }
 
   const maxContent = content.slice(0, 8000);
-  const truncated = content.length > 8000 ? '\n\n(喵~ 文件太长了，只读取了前8000字哦)' : '';
+  const truncated = content.length > 8000 ? '\n\n(文件太长了，只读取了前8000字哦)' : '';
 
   const messages = [
     buildSystemPrompt(),
@@ -565,7 +565,7 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
 
     return reply;
   } catch (err) {
-    return `喵呜... 分析文件时出错了: ${err.message}`;
+    return `分析文件时出错了: ${err.message}`;
   }
 });
 
@@ -713,6 +713,20 @@ ipcMain.handle('get-personality', () => {
 ipcMain.handle('validate-api-key', async () => {
   const apiKey = store.get('apiKey');
   return await validateApiKey(apiKey);
+});
+
+ipcMain.handle('get-theme', () => {
+  const themeId = store.get('activeTheme') || 'orange';
+  return getTheme(themeId);
+});
+
+ipcMain.handle('set-theme', (_event, themeId) => {
+  const theme = getTheme(themeId);
+  if (!theme) return false;
+  store.set('activeTheme', themeId);
+  if (petWindow) petWindow.webContents.send('theme-changed', theme);
+  if (chatWindow) chatWindow.webContents.send('theme-changed', theme);
+  return true;
 });
 
 ipcMain.on('open-chat', () => {

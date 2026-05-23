@@ -19,6 +19,9 @@ const importBtn = document.getElementById('importBtn');
 const typingDots = document.getElementById('typingDots') || createTypingIndicator();
 const personalityInput = document.getElementById('personalityInput');
 const savePersonalityBtn = document.getElementById('savePersonalityBtn');
+const themeSelect = document.getElementById('themeSelect');
+const headerIcon = document.getElementById('headerIcon');
+const headerTitle = document.getElementById('headerTitle');
 
 let isLoading = false;
 let isSearchEnabled = false;
@@ -31,6 +34,43 @@ function createTypingIndicator() {
   el.innerHTML = '<span></span><span></span><span></span>';
   messagesArea.appendChild(el);
   return el;
+}
+
+/* ─── Theme helpers ─── */
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '255, 179, 71';
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.style.setProperty('--accent', theme.accentColor);
+  root.style.setProperty('--accent-dark', theme.accentColorDark);
+  root.style.setProperty('--accent-rgb', hexToRgb(theme.accentColor));
+
+  headerIcon.textContent = theme.emoji;
+  headerTitle.textContent = theme.name;
+  chatInput.placeholder = `跟${theme.name}说点什么...`;
+
+  const welcomeIcon = document.getElementById('welcomeIcon');
+  const welcomeText = document.getElementById('welcomeText');
+  if (welcomeIcon) welcomeIcon.textContent = theme.emoji;
+  if (welcomeText) welcomeText.textContent = `你好呀~ 我是${theme.name}！`;
+
+  themeSelect.value = theme.id;
+}
+
+function renderWelcomeMessage(subtitle) {
+  const emoji = headerIcon.textContent || '🧡';
+  const name = headerTitle.textContent || '小橘';
+  return `
+    <div class="welcome-msg">
+      <div class="welcome-icon" id="welcomeIcon">${emoji}</div>
+      <div class="welcome-text">你好呀~ 我是${name}！</div>
+      <div class="welcome-sub">${subtitle || '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~'}</div>
+    </div>`;
 }
 
 /* ─── Init ─── */
@@ -53,6 +93,11 @@ async function init() {
   const personality = await window.petAPI.getPersonality();
   personalityInput.value = personality;
 
+  // Load and apply current theme (must be before loadConversationMessages
+  // so renderWelcomeMessage picks up the correct name/emoji)
+  const theme = await window.petAPI.getTheme();
+  applyTheme(theme);
+
   // Load conversations and populate dropdown
   await refreshConversationSelect();
 
@@ -66,6 +111,11 @@ async function init() {
   window.petAPI.onMessagesUpdated(async () => {
     await loadConversationMessages();
     await refreshConversationSelect();
+  });
+
+  // Listen for theme changes
+  window.petAPI.onThemeChanged((theme) => {
+    applyTheme(theme);
   });
 
   // Focus input listener
@@ -134,6 +184,10 @@ document.addEventListener('click', (e) => {
   if (!conversationDropdown.contains(e.target)) {
     closeDropdown();
   }
+  // Close settings panel when clicking outside
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
+    settingsPanel.classList.remove('open');
+  }
 });
 
 // Handle item click (switch conversation) and delete button click
@@ -179,12 +233,7 @@ async function loadConversationMessages() {
   if (history && history.length > 0) {
     history.forEach(msg => addMessage(msg.role, msg.content, false));
   } else {
-    messagesArea.innerHTML = `
-      <div class="welcome-msg">
-        <div class="welcome-icon">🐱</div>
-        <div class="welcome-text">喵~ 我是小橘！</div>
-        <div class="welcome-sub">有什么想聊的吗？</div>
-      </div>`;
+    messagesArea.innerHTML = renderWelcomeMessage('有什么想聊的吗？');
     messagesArea.appendChild(typingDots);
   }
 
@@ -254,7 +303,7 @@ async function sendMessage() {
     await refreshConversationSelect();
   } catch (err) {
     typingDots.classList.remove('show');
-    addMessage('assistant', `喵呜... 发送失败了: ${err.message}`);
+    addMessage('assistant', `哎呀，发送失败了: ${err.message}`);
   }
 
   sendBtn.disabled = false;
@@ -271,7 +320,7 @@ importBtn.addEventListener('click', async () => {
   if (!result) return; // User cancelled
 
   if (result.error) {
-    addMessage('assistant', `喵~ ${result.error}`);
+    addMessage('assistant', `哎呀，${result.error}`);
     return;
   }
 
@@ -293,7 +342,7 @@ importBtn.addEventListener('click', async () => {
     await refreshConversationSelect();
   } catch (err) {
     typingDots.classList.remove('show');
-    addMessage('assistant', `喵呜... 分析文件时出错了: ${err.message}`);
+    addMessage('assistant', `哎呀，分析文件时出错了: ${err.message}`);
   }
 
   sendBtn.disabled = false;
@@ -340,10 +389,12 @@ function showApiKeyWarning(reason) {
   const textEl = document.getElementById('warningText');
   if (!banner || !textEl) return;
 
+  const name = headerTitle.textContent || '小橘';
+
   if (reason === 'no-key') {
-    textEl.textContent = '还没设置API Key哦，小橘没法和你聊天~ 请在下方输入你的DeepSeek API Key。';
+    textEl.textContent = `还没设置API Key哦，${name}没法和你聊天~ 请在下方输入你的DeepSeek API Key。`;
   } else if (reason === 'invalid-key') {
-    textEl.textContent = 'API Key好像不对，小橘连不上~ 请检查并重新输入。';
+    textEl.textContent = `API Key好像不对，${name}连不上~ 请检查并重新输入。`;
   } else {
     textEl.textContent = 'API Key可能有问题，请检查后重试~';
   }
@@ -378,16 +429,18 @@ savePersonalityBtn.addEventListener('click', async () => {
   }, 1500);
 });
 
+/* ─── Theme select ─── */
+themeSelect.addEventListener('change', async () => {
+  await window.petAPI.setTheme(themeSelect.value);
+  const theme = await window.petAPI.getTheme();
+  applyTheme(theme);
+});
+
 /* ─── New chat ─── */
 newChatBtn.addEventListener('click', async () => {
   await window.petAPI.newConversation();
   await refreshConversationSelect();
-  messagesArea.innerHTML = `
-    <div class="welcome-msg">
-      <div class="welcome-icon">🐱</div>
-      <div class="welcome-text">喵~ 开始新对话！</div>
-      <div class="welcome-sub">有什么想聊的吗？</div>
-    </div>`;
+  messagesArea.innerHTML = renderWelcomeMessage('有什么想聊的吗？');
   messagesArea.appendChild(typingDots);
 });
 
