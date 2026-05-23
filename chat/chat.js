@@ -210,7 +210,7 @@ function addMessage(role, content, animate = true) {
   if (!animate) div.style.animation = 'none';
 
   // Add copy button for assistant messages
-  if (role === 'assistant') {
+  if (role === 'user' || role === 'assistant') {
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-btn';
     copyBtn.innerHTML = '📋';

@@ -315,6 +315,31 @@ body {
   background: var(--orange);
   color: #1a1a1a;
   border-bottom-right-radius: 4px;
+  position: relative;
+}
+.message.user .copy-btn {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.message.user:hover .copy-btn { opacity: 0.6; }
+.message.user .copy-btn:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+.message.user .copy-btn.copied {
+  opacity: 1;
+  color: #1a1a1a;
+  font-weight: bold;
 }
 .message.assistant {
   align-self: flex-start;
