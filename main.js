@@ -78,13 +78,14 @@ function createPetWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
   const savedPos = store.get('petPosition');
 
-  const size = 240;
-  const x = savedPos != null ? savedPos.x : screenWidth - size - 40;
+  const petWidth = 170;
+  const petHeight = 210;
+  const x = savedPos != null ? savedPos.x : screenWidth - petWidth - 40;
   const y = savedPos != null ? savedPos.y : 30;
 
   petWindow = new BrowserWindow({
-    width: size,
-    height: size,
+    width: petWidth,
+    height: petHeight,
     x,
     y,
     transparent: true,
@@ -294,7 +295,11 @@ async function generateConversationTitle(userMessage, aiResponse, apiKey) {
 }
 
 function buildSystemPrompt(searchContext) {
-  let content = `你是一只可爱的橘色小奶猫桌面宠物，名字叫"小橘"。你的性格：
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+  let content = `今天是${todayStr}。
+
+你是一只可爱的橘色小奶猫桌面宠物，名字叫"小橘"。你的性格：
 - 说话带"喵~"、"喵呜~"等口癖
 - 语气可爱、粘人、活泼
 - 会用emoji卖萌
@@ -376,6 +381,43 @@ function formatSearchContext(query, results) {
   return text;
 }
 
+/* ─── Weather ─── */
+function isWeatherQuery(query) {
+  return /天气|气温|温度|下雨|下雪|刮风|台风|雾霾|晴天|阴天|多云|湿度|风力|穿什么|热不热|冷不冷|weather|temperature|rain|snow|wind|forecast/i.test(query);
+}
+
+async function fetchWeatherData() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch('https://wttr.in?format=j1', {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'curl/8.0' }
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return formatWeatherData(data);
+  } catch { return null; }
+}
+
+function formatWeatherData(data) {
+  const current = data.current_condition?.[0];
+  const today = data.weather?.[0];
+  if (!current) return null;
+
+  let text = '\n\n【实时天气数据 - wttr.in】\n';
+  text += `当前温度: ${current.temp_C}°C (体感 ${current.FeelsLikeC}°C)\n`;
+  text += `天气状况: ${current.weatherDesc?.[0]?.value || '未知'}\n`;
+  text += `湿度: ${current.humidity}%\n`;
+  text += `风速: ${current.windspeedKmph} km/h\n`;
+  if (today) {
+    text += `今日最高: ${today.maxtempC}°C / 最低: ${today.mintempC}°C\n`;
+  }
+  text += '\n请根据以上实时天气数据回答用户。记住保持你可爱的性格~\n';
+  return text;
+}
+
 /* ─── File reading ─── */
 async function readFileContent(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -422,9 +464,19 @@ ipcMain.handle('send-message', async (_event, message) => {
 
   let searchContext = null;
   if (store.get('searchEnabled')) {
-    const results = await performWebSearch(message);
-    if (results) {
-      searchContext = formatSearchContext(message, results);
+    // Weather queries: fetch real-time weather data
+    if (isWeatherQuery(message)) {
+      const weatherData = await fetchWeatherData();
+      if (weatherData) {
+        searchContext = weatherData;
+      }
+    }
+    // If no weather data, fall back to Bing search
+    if (!searchContext) {
+      const results = await performWebSearch(message);
+      if (results) {
+        searchContext = formatSearchContext(message, results);
+      }
     }
   }
 

@@ -36,6 +36,8 @@ body {
   -webkit-backdrop-filter: blur(25px);
   -webkit-app-region: drag;
   border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  position: relative;
+  z-index: 10;
 }
 .header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .header-icon { font-size: 22px; }
@@ -85,13 +87,11 @@ body {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: rgba(44, 44, 46, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 0.5px solid rgba(255,255,255,0.1);
+  background: #2c2c2e;
+  border: 0.5px solid rgba(255,255,255,0.15);
   border-radius: 8px;
   overflow: hidden;
-  z-index: 100;
+  z-index: 9999;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 .dropdown-item {
@@ -143,6 +143,8 @@ body {
   transition: all 0.15s;
 }
 .header-btn:hover { background: var(--surface2); color: var(--text); }
+.header-btn.search-active { background: var(--orange); color: white; }
+.header-btn.search-active:hover { background: var(--orange-dark); }
 
 /* ─── Settings ─── */
 .settings-panel {
@@ -318,6 +320,31 @@ body {
   background: var(--surface2);
   color: var(--text);
   border-bottom-left-radius: 4px;
+  position: relative;
+}
+.message.assistant .copy-btn {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.message.assistant:hover .copy-btn { opacity: 0.6; }
+.message.assistant .copy-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+.message.assistant .copy-btn.copied {
+  opacity: 1;
+  color: var(--orange);
+  font-weight: bold;
 }
 .message.assistant p { margin-bottom: 6px; }
 .message.assistant p:last-child { margin-bottom: 0; }

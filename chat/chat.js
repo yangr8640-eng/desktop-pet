@@ -4,6 +4,7 @@ const messagesArea = document.getElementById('messagesArea');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 const searchToggle = document.getElementById('searchToggle');
+const searchHeaderBtn = document.getElementById('searchHeaderBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
 const apiKeyInput = document.getElementById('apiKeyInput');
@@ -207,6 +208,26 @@ function addMessage(role, content, animate = true) {
 
   div.innerHTML = html;
   if (!animate) div.style.animation = 'none';
+
+  // Add copy button for assistant messages
+  if (role === 'assistant') {
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.innerHTML = '📋';
+    copyBtn.title = '复制';
+    copyBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await navigator.clipboard.writeText(content);
+      copyBtn.innerHTML = '✓';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.innerHTML = '📋';
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    });
+    div.appendChild(copyBtn);
+  }
+
   messagesArea.insertBefore(div, typingDots);
   messagesArea.scrollTop = messagesArea.scrollHeight;
 }
@@ -289,11 +310,29 @@ settingsBtn.addEventListener('click', () => {
 async function initSearchToggle() {
   isSearchEnabled = await window.petAPI.getSearchEnabled();
   searchToggle.checked = isSearchEnabled;
+  updateSearchHeaderButton();
 
   searchToggle.addEventListener('change', async () => {
     isSearchEnabled = await window.petAPI.toggleSearch();
     searchToggle.checked = isSearchEnabled;
+    updateSearchHeaderButton();
   });
+
+  searchHeaderBtn.addEventListener('click', async () => {
+    isSearchEnabled = await window.petAPI.toggleSearch();
+    searchToggle.checked = isSearchEnabled;
+    updateSearchHeaderButton();
+  });
+}
+
+function updateSearchHeaderButton() {
+  if (isSearchEnabled) {
+    searchHeaderBtn.classList.add('search-active');
+    searchHeaderBtn.title = '联网搜索：开';
+  } else {
+    searchHeaderBtn.classList.remove('search-active');
+    searchHeaderBtn.title = '联网搜索：关';
+  }
 }
 
 function showApiKeyWarning(reason) {
