@@ -44,7 +44,15 @@ function hexToRgb(hex) {
     : '255, 179, 71';
 }
 
+let currentWelcomeEmoji = '🧡';
+let currentWelcomeGreeting = '你好呀~ 我是小橘！';
+let currentWelcomeSubtitle = '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~';
+
 function applyTheme(theme) {
+  currentWelcomeEmoji = theme.emoji;
+  currentWelcomeGreeting = theme.welcomeGreeting;
+  currentWelcomeSubtitle = theme.welcomeSubtitle;
+
   const root = document.documentElement;
   root.style.setProperty('--accent', theme.accentColor);
   root.style.setProperty('--accent-dark', theme.accentColorDark);
@@ -57,19 +65,17 @@ function applyTheme(theme) {
   const welcomeIcon = document.getElementById('welcomeIcon');
   const welcomeText = document.getElementById('welcomeText');
   if (welcomeIcon) welcomeIcon.textContent = theme.emoji;
-  if (welcomeText) welcomeText.textContent = `你好呀~ 我是${theme.name}！`;
+  if (welcomeText) welcomeText.textContent = theme.welcomeGreeting;
 
   themeSelect.value = theme.id;
 }
 
 function renderWelcomeMessage(subtitle) {
-  const emoji = headerIcon.textContent || '🧡';
-  const name = headerTitle.textContent || '小橘';
   return `
     <div class="welcome-msg">
-      <div class="welcome-icon" id="welcomeIcon">${emoji}</div>
-      <div class="welcome-text">你好呀~ 我是${name}！</div>
-      <div class="welcome-sub">${subtitle || '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~'}</div>
+      <div class="welcome-icon" id="welcomeIcon">${currentWelcomeEmoji}</div>
+      <div class="welcome-text">${currentWelcomeGreeting}</div>
+      <div class="welcome-sub">${subtitle || currentWelcomeSubtitle}</div>
     </div>`;
 }
 
@@ -116,6 +122,12 @@ async function init() {
   // Listen for theme changes
   window.petAPI.onThemeChanged((theme) => {
     applyTheme(theme);
+    // If welcome message is showing, regenerate it with new theme
+    if (messagesArea.querySelector('.welcome-msg')) {
+      const sub = messagesArea.querySelector('.welcome-sub');
+      messagesArea.innerHTML = renderWelcomeMessage(sub ? sub.textContent : '');
+      messagesArea.appendChild(typingDots);
+    }
   });
 
   // Focus input listener

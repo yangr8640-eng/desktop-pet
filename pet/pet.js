@@ -24,7 +24,7 @@ wrapper.addEventListener('mouseover', (e) => {
   if (isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = true;
   wrapper.classList.add('greeting');
-  showBubble(`嗨~ ${currentThemeEmoji}`);
+  showBubble(currentMessages.greeting);
 
   clearTimeout(hoverTimeout);
   hoverTimeout = setTimeout(() => {
@@ -79,7 +79,7 @@ document.addEventListener('dragenter', (e) => {
   if (dragCounter === 1) {
     wrapper.classList.add('dragover');
     setMouthOpen(true);
-    showBubble('给我看看~ 👀');
+    showBubble(currentMessages.dragHere);
   }
 });
 
@@ -111,12 +111,12 @@ document.addEventListener('drop', async (e) => {
 
   // Eating animation
   setMouthOpen(true);
-  showBubble('嚼嚼... 🤤');
+  showBubble(currentMessages.eating);
   await sleep(400);
   setMouthOpen(false);
 
   // Analyze
-  showBubble('分析中... 📄');
+  showBubble(currentMessages.analyzing);
   try {
     await window.petAPI.analyzeFile(filePath);
   } catch (err) {
@@ -152,9 +152,32 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/* ─── Random idle behaviors ─── */
-const idleMessages = ['好无聊呀~', '主人呢？💛', '今天天气真好☀️', '嘻嘻~', '想你啦~', '...'];
+/* ─── Theme-specific speech messages ─── */
+const themeMessages = {
+  orange: {
+    greeting: '嗨~ 🧡',
+    idle: ['好无聊呀~', '主人呢？💛', '今天天气真好☀️', '嘻嘻~', '想你啦~', '...'],
+    dragHere: '给我看看~ 👀',
+    eating: '嚼嚼... 🤤',
+    analyzing: '分析中... 📄'
+  },
+  yellow: {
+    greeting: '嗨~ 💛',
+    idle: ['好无聊呀~', '主人呢？💛', '今天天气真好☀️', '嘻嘻~', '想你啦~', '...'],
+    dragHere: '给我看看~ 👀',
+    eating: '嚼嚼... 🤤',
+    analyzing: '分析中... 📄'
+  },
+  warrior: {
+    greeting: '向您致敬，战士。⚔️',
+    idle: ['警戒中... 🛡️', '等待指令。📜', '帝皇庇佑。🏛️', '秩序即胜利。⚔️', '马库拉格之光不灭。', '阵型稳固。'],
+    dragHere: '提交情报，战士。📜',
+    eating: '接收情报中...',
+    analyzing: '战略分析中... 📜'
+  }
+};
 
+let currentMessages = themeMessages.orange;
 let currentThemeEmoji = '🧡';
 
 /* ─── Theme ─── */
@@ -162,6 +185,20 @@ function applyPetTheme(theme) {
   petNormalImg.src = theme.svgs.normal;
   petMouthOpenImg.src = theme.svgs.mouthOpen;
   currentThemeEmoji = theme.emoji;
+  currentMessages = themeMessages[theme.id] || themeMessages.orange;
+
+  // Warrior SVGs have large viewBox, size to match other themes
+  if (theme.id === 'warrior') {
+    petNormalImg.style.width = '128px';
+    petNormalImg.style.height = '128px';
+    petMouthOpenImg.style.width = '128px';
+    petMouthOpenImg.style.height = '128px';
+  } else {
+    petNormalImg.style.width = '';
+    petNormalImg.style.height = '';
+    petMouthOpenImg.style.width = '';
+    petMouthOpenImg.style.height = '';
+  }
 }
 
 window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
@@ -173,7 +210,8 @@ window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
 
 setInterval(() => {
   if (!isHovering && !wrapper.classList.contains('dragover') && !bubble.classList.contains('show')) {
-    const msg = idleMessages[Math.floor(Math.random() * idleMessages.length)];
+    const msgs = currentMessages.idle;
+    const msg = msgs[Math.floor(Math.random() * msgs.length)];
     showBubble(msg);
     setTimeout(() => {
       if (!isHovering) hideBubble();
