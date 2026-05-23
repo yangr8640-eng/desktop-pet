@@ -535,8 +535,8 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
     return content;
   }
 
-  const maxContent = content.slice(0, 8000);
-  const truncated = content.length > 8000 ? '\n\n(文件太长了，只读取了前8000字哦)' : '';
+  const maxContent = content.slice(0, 20000);
+  const truncated = content.length > 20000 ? '\n\n(文件太长了，只读取了前20000字哦)' : '';
 
   const messages = [
     buildSystemPrompt(),
@@ -678,7 +678,7 @@ ipcMain.handle('import-file', async () => {
     return { fileName, content: null, error: content };
   }
 
-  const truncated = content.slice(0, 8000);
+  const truncated = content.slice(0, 20000);
   return { fileName, content: truncated };
 });
 
