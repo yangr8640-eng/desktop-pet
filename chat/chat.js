@@ -416,4 +416,51 @@ chatInput.addEventListener('input', () => {
   chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
 });
 
+/* ─── Resize handles ─── */
+let isResizing = false;
+let resizeDir = null;
+let resizeStart = {};
+
+const MIN_WIDTH = 360;
+function getMinHeight() {
+  return Math.round(screen.availHeight * 0.7);
+}
+
+document.querySelectorAll('.resize-handle').forEach(handle => {
+  handle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    resizeDir = handle.dataset.resize;
+    resizeStart = {
+      x: e.screenX,
+      y: e.screenY,
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+    e.preventDefault();
+    e.stopPropagation();
+  });
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isResizing) return;
+
+  const dx = e.screenX - resizeStart.x;
+  const dy = e.screenY - resizeStart.y;
+  const minH = getMinHeight();
+
+  let newWidth = resizeStart.width;
+  let newHeight = resizeStart.height;
+
+  if (resizeDir.includes('e')) newWidth = Math.max(MIN_WIDTH, resizeStart.width + dx);
+  if (resizeDir.includes('w')) newWidth = Math.max(MIN_WIDTH, resizeStart.width - dx);
+  if (resizeDir.includes('s')) newHeight = Math.max(minH, resizeStart.height + dy);
+
+  window.petAPI.resizeWindow(newWidth, newHeight);
+});
+
+document.addEventListener('mouseup', () => {
+  isResizing = false;
+  resizeDir = null;
+});
+
 init();

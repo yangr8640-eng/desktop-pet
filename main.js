@@ -72,6 +72,10 @@ function updateActiveConversation(updater) {
 let petWindow = null;
 let chatWindow = null;
 let isChatVisible = false;
+let chatWidth = 360;
+let chatHeight = 400; // default, recalculated in createChatWindow
+let savedChatBounds = null; // preserved across hide/show cycles
+let ignoreBlurUntil = 0; // timestamp to suppress blur after show
 
 /* ─── Pet Window ─── */
 function createPetWindow() {
@@ -110,8 +114,8 @@ function createPetWindow() {
 /* ─── Chat Window ─── */
 function createChatWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 360;
-  const chatHeight = Math.round(screenHeight * 0.7);
+  chatWidth = 360;
+  chatHeight = Math.round(screenHeight * 0.7);
   const chatY = Math.round((screenHeight - chatHeight) / 2);
 
   chatWindow = new BrowserWindow({
@@ -120,7 +124,9 @@ function createChatWindow() {
     x: screenWidth,
     y: chatY,
     frame: false,
-    resizable: false,
+    resizable: true,
+    minWidth: 360,
+    minHeight: chatHeight,
     skipTaskbar: false,
     show: false,
     alwaysOnTop: true,
@@ -142,6 +148,7 @@ function createChatWindow() {
     hideChatWindow();
   });
   chatWindow.on('blur', () => {
+    if (Date.now() < ignoreBlurUntil) return;
     hideChatWindow();
   });
   chatWindow.on('closed', () => { chatWindow = null; });
@@ -152,9 +159,13 @@ function showChatWindow() {
   if (isChatVisible) return;
   isChatVisible = true;
 
+  // Restore user-resized dimensions from last hide
+  if (savedChatBounds) {
+    chatWidth = savedChatBounds.width;
+    chatHeight = savedChatBounds.height;
+  }
+
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 360;
-  const chatHeight = Math.round(screenHeight * 0.7);
   const chatY = Math.round((screenHeight - chatHeight) / 2);
   const startX = screenWidth;
   const endX = screenWidth - chatWidth;
@@ -162,6 +173,7 @@ function showChatWindow() {
   chatWindow.setBounds({ x: startX, y: chatY, width: chatWidth, height: chatHeight });
   chatWindow.show();
   chatWindow.focus();
+  ignoreBlurUntil = Date.now() + 400; // suppress blur for 400ms after show
 
   const duration = 280;
   const startTime = Date.now();
@@ -186,9 +198,12 @@ function hideChatWindow() {
   if (!isChatVisible) return;
   isChatVisible = false;
 
+  // Save current size so we can restore on next show
+  savedChatBounds = chatWindow.getBounds();
+  chatWidth = savedChatBounds.width;
+  chatHeight = savedChatBounds.height;
+
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatWidth = 360;
-  const chatHeight = Math.round(screenHeight * 0.7);
   const chatY = Math.round((screenHeight - chatHeight) / 2);
   const startX = screenWidth - chatWidth;
   const endX = screenWidth;
@@ -714,6 +729,20 @@ ipcMain.on('show-chat', () => {
     showChatWindow();
   }
   if (chatWindow) chatWindow.webContents.send('focus-input');
+});
+
+ipcMain.on('resize-window', (_event, width, height) => {
+  if (!chatWindow) return;
+  const { width: scrW, height: scrH } = screen.getPrimaryDisplay().workAreaSize;
+  const minH = Math.round(scrH * 0.7);
+  chatWidth = Math.max(360, Math.round(width));
+  chatHeight = Math.max(minH, Math.round(height));
+  chatWindow.setBounds({
+    x: scrW - chatWidth,
+    y: chatWindow.getBounds().y,
+    width: chatWidth,
+    height: chatHeight
+  });
 });
 
 ipcMain.on('close-chat', () => {
