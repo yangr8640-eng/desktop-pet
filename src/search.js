@@ -134,4 +134,4 @@ function formatWeatherData(data) {
   return text;
 }
 
-module.exports = { performWebSearch, formatSearchContext, isWeatherQuery, fetchWeatherData };
+module.exports = { performWebSearch, formatSearchContext, isWeatherQuery, fetchWeatherData, dedupeResults };

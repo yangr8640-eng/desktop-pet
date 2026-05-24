@@ -26,7 +26,12 @@
     "icon": "python3 generate_icon.py",
     "build": "electron-builder",
     "prebuild": "npm run icon",
-    "postbuild": "node scripts/generate-latest-yml.js"
+    "postbuild": "node scripts/generate-latest-yml.js",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/test/**/*.test.js"]
   },
   "build": {
     "appId": "com.desktoppet.cat",
@@ -78,6 +83,7 @@
   "devDependencies": {
     "cross-env": "^7.0.3",
     "electron": "^33.4.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "jest": "^30.4.2"
   }
 }
