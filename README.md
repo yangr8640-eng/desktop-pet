@@ -32,6 +32,17 @@ An AI desktop pet for macOS, supporting DeepSeek, OpenAI (ChatGPT), and custom m
 
 ## 安装 / Installation
 
+### Homebrew Cask（推荐 / Recommended）
+
+```bash
+brew tap yangr8640-eng/desktoppet
+brew install --cask desktoppet
+```
+
+安装后桌宠会出现在 `/Applications/DesktopPet.app`，双击运行即可。
+
+### 源码安装 / From Source
+
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/yangr8640-eng/desktop-pet.git
