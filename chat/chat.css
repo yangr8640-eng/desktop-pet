@@ -89,7 +89,7 @@ body {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: rgba(44, 44, 46, 0.75);
+  background: #2c2c2e;
   border: 0.5px solid rgba(255,255,255,0.1);
   border-radius: 8px;
   overflow: hidden;
@@ -152,7 +152,7 @@ body {
 .settings-panel {
   display: none;
   padding: 16px;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   background: var(--surface);
   backdrop-filter: blur(40px);
@@ -204,6 +204,49 @@ body {
 }
 .settings-hint {
   font-size: 11px; color: var(--text2); margin-top: 10px;
+}
+
+/* ─── Model config ─── */
+.settings-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.settings-input-grow {
+  flex: 1;
+  margin-bottom: 0;
+}
+.settings-save-small {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.settings-save-outline {
+  background: transparent;
+  border: 1px dashed var(--surface2);
+  color: var(--text2);
+  width: 100%;
+  margin-bottom: 4px;
+}
+.settings-save-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.settings-validation {
+  font-size: 11px;
+  display: block;
+  margin-top: 2px;
+}
+.settings-validation.valid { color: #4CAF50; }
+.settings-validation.invalid { color: #FF453A; }
+
+.settings-info {
+  font-size: 11px;
+  color: var(--text2);
+  display: block;
+  margin-top: -4px;
+  margin-bottom: 8px;
 }
 
 /* ─── Settings row (toggle) ─── */

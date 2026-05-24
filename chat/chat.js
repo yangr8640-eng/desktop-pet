@@ -23,9 +23,22 @@ const themeSelect = document.getElementById('themeSelect');
 const headerIcon = document.getElementById('headerIcon');
 const headerTitle = document.getElementById('headerTitle');
 
+const modelSelect = document.getElementById('modelSelect');
+const modelNameInput = document.getElementById('modelNameInput');
+const modelUrlInput = document.getElementById('modelUrlInput');
+const modelModelIdInput = document.getElementById('modelModelIdInput');
+const modelInfo = document.getElementById('modelInfo');
+const keyValidation = document.getElementById('keyValidation');
+const addModelBtn = document.getElementById('addModelBtn');
+const deleteModelBtn = document.getElementById('deleteModelBtn');
+const modelCustomFields = document.getElementById('modelCustomFields');
+const apiKeyLabel = document.getElementById('apiKeyLabel');
+
 let isLoading = false;
 let isSearchEnabled = false;
 let isSwitchingConversation = false;
+let currentModelProvider = null;
+let modelProviders = [];
 
 function createTypingIndicator() {
   const el = document.createElement('div');
@@ -88,15 +101,16 @@ function renderWelcomeMessage(subtitle) {
 
 /* ─── Init ─── */
 async function init() {
-  // Load API key
-  const key = await window.petAPI.getApiKey();
-  apiKeyInput.value = key;
+  // Load model providers
+  await loadModelProviders();
 
-  // Validate API key on startup
+  // Validate active model's API key on startup
   try {
-    const validation = await window.petAPI.validateApiKey();
-    if (!validation.valid) {
-      showApiKeyWarning(validation.reason);
+    if (currentModelProvider) {
+      const validation = await window.petAPI.validateModelApiKey(currentModelProvider.id);
+      if (!validation.valid) {
+        showApiKeyWarning(validation.reason);
+      }
     }
   } catch {
     // IPC itself fails — don't block
@@ -408,12 +422,13 @@ function showApiKeyWarning(reason) {
   const textEl = document.getElementById('warningText');
   if (!banner || !textEl) return;
 
-  const name = headerTitle.textContent || '小橘';
+  const modelName = currentModelProvider ? currentModelProvider.name : 'AI';
+  const name = headerTitle.textContent || 'Claude';
 
   if (reason === 'no-key') {
-    textEl.textContent = `还没设置API Key哦，${name}没法和你聊天~ 请在下方输入你的DeepSeek API Key。`;
+    textEl.textContent = `还没设置${modelName}的API Key哦，${name}没法和你聊天~ 请在下方输入API Key。`;
   } else if (reason === 'invalid-key') {
-    textEl.textContent = `API Key好像不对，${name}连不上~ 请检查并重新输入。`;
+    textEl.textContent = `${modelName}的API Key好像不对，${name}连不上~ 请检查并重新输入。`;
   } else {
     textEl.textContent = 'API Key可能有问题，请检查后重试~';
   }
@@ -422,20 +437,134 @@ function showApiKeyWarning(reason) {
   settingsPanel.classList.add('open');
 }
 
+/* ─── Model Provider UI ─── */
+async function loadModelProviders() {
+  modelProviders = await window.petAPI.getModelProviders();
+  currentModelProvider = await window.petAPI.getActiveModelProvider();
+
+  // Populate model select
+  modelSelect.innerHTML = '';
+  modelProviders.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.type === 'preset' ? p.name : `${p.name} (自定义)`;
+    if (p.id === currentModelProvider.id) opt.selected = true;
+    modelSelect.appendChild(opt);
+  });
+
+  renderModelConfig(currentModelProvider);
+}
+
+function renderModelConfig(provider) {
+  if (!provider) return;
+  currentModelProvider = provider;
+
+  apiKeyInput.value = provider.apiKey || '';
+  keyValidation.style.display = 'none';
+  modelInfo.textContent = '';
+
+  if (provider.type === 'preset') {
+    modelCustomFields.style.display = 'none';
+    deleteModelBtn.style.display = 'none';
+    modelInfo.textContent = `端点: ${provider.apiBaseUrl}  |  模型: ${provider.modelName}`;
+  } else {
+    modelCustomFields.style.display = 'block';
+    deleteModelBtn.style.display = 'block';
+    modelNameInput.value = provider.name || '';
+    modelUrlInput.value = provider.apiBaseUrl || '';
+    modelModelIdInput.value = provider.modelName || '';
+  }
+}
+
+modelSelect.addEventListener('change', async () => {
+  const providerId = modelSelect.value;
+  const provider = await window.petAPI.setActiveModelProvider(providerId);
+  if (provider) {
+    renderModelConfig(provider);
+    // Validate key for newly selected model
+    const validation = await window.petAPI.validateModelApiKey(providerId);
+    showKeyValidation(validation);
+  }
+});
+
 saveKeyBtn.addEventListener('click', async () => {
-  const key = apiKeyInput.value.trim();
-  await window.petAPI.saveApiKey(key);
+  if (!currentModelProvider) return;
+
+  const updated = {
+    id: currentModelProvider.id,
+    type: currentModelProvider.type,
+    apiKey: apiKeyInput.value.trim()
+  };
+
+  if (currentModelProvider.type === 'custom') {
+    updated.name = modelNameInput.value.trim() || currentModelProvider.name;
+    updated.apiBaseUrl = modelUrlInput.value.trim() || currentModelProvider.apiBaseUrl;
+    updated.modelName = modelModelIdInput.value.trim() || currentModelProvider.modelName;
+  }
+
+  await window.petAPI.saveModelProvider(updated);
+
   // Hide API key warning on successful save
   const warningBanner = document.getElementById('apiKeyWarning');
   if (warningBanner) warningBanner.style.display = 'none';
-  settingsPanel.classList.remove('open');
+
   saveKeyBtn.textContent = '已保存 ✓';
   saveKeyBtn.style.background = '#4CAF50';
+
+  // Validate the key
+  const validation = await window.petAPI.validateModelApiKey(currentModelProvider.id);
+  showKeyValidation(validation);
+
+  // Refresh model providers and current model
+  await loadModelProviders();
+
   setTimeout(() => {
     saveKeyBtn.textContent = '保存';
     saveKeyBtn.style.background = '';
   }, 1500);
 });
+
+addModelBtn.addEventListener('click', async () => {
+  const customId = 'custom_' + Date.now().toString(36);
+  const newProvider = {
+    id: customId,
+    name: '自定义模型',
+    type: 'custom',
+    apiKey: '',
+    apiBaseUrl: '',
+    modelName: '',
+    order: modelProviders.length
+  };
+
+  await window.petAPI.saveModelProvider(newProvider);
+  await window.petAPI.setActiveModelProvider(customId);
+  await loadModelProviders();
+});
+
+deleteModelBtn.addEventListener('click', async () => {
+  if (!currentModelProvider || currentModelProvider.type === 'preset') return;
+
+  const success = await window.petAPI.deleteModelProvider(currentModelProvider.id);
+  if (success) {
+    await loadModelProviders();
+  }
+});
+
+function showKeyValidation(validation) {
+  keyValidation.style.display = 'block';
+  if (validation.valid) {
+    keyValidation.textContent = 'API Key 有效 ✓';
+    keyValidation.className = 'settings-validation valid';
+  } else if (validation.reason === 'no-key') {
+    keyValidation.textContent = '尚未设置 API Key';
+    keyValidation.className = 'settings-validation invalid';
+  } else if (validation.reason === 'invalid-key') {
+    keyValidation.textContent = 'API Key 无效，请检查';
+    keyValidation.className = 'settings-validation invalid';
+  } else {
+    keyValidation.style.display = 'none';
+  }
+}
 
 savePersonalityBtn.addEventListener('click', async () => {
   const text = personalityInput.value.trim();

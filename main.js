@@ -14,7 +14,8 @@ const store = new Store({
     petPosition: null,
     conversations: [],
     activeConversationId: null,
-    apiKey: '',
+    modelProviders: [],
+    activeModelProviderId: 'deepseek',
     searchEnabled: false,
     personalityPrompt: '',
     activeTheme: 'claude'
@@ -69,6 +70,61 @@ function updateActiveConversation(updater) {
     updater(convs[idx]);
     saveConversations(convs);
   }
+}
+
+/* ─── Model Provider helpers ─── */
+const PRESET_PROVIDERS = [
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    type: 'preset',
+    apiKey: '',
+    apiBaseUrl: 'https://api.deepseek.com/chat/completions',
+    modelName: 'deepseek-chat',
+    order: 0
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI / ChatGPT',
+    type: 'preset',
+    apiKey: '',
+    apiBaseUrl: 'https://api.openai.com/v1/chat/completions',
+    modelName: 'gpt-4o',
+    order: 1
+  }
+];
+
+function getModelProviders() {
+  return store.get('modelProviders') || [];
+}
+
+function saveModelProviders(providers) {
+  store.set('modelProviders', providers);
+}
+
+function ensurePresetProviders() {
+  let providers = getModelProviders();
+  let changed = false;
+  for (const preset of PRESET_PROVIDERS) {
+    if (!providers.find(p => p.id === preset.id)) {
+      providers.push({ ...preset });
+      changed = true;
+    }
+  }
+  if (changed) saveModelProviders(providers);
+  return providers;
+}
+
+function getActiveModelProvider() {
+  ensurePresetProviders();
+  const providers = getModelProviders();
+  const activeId = store.get('activeModelProviderId') || 'deepseek';
+  let provider = providers.find(p => p.id === activeId);
+  if (!provider) {
+    provider = providers[0] || PRESET_PROVIDERS[0];
+    store.set('activeModelProviderId', provider.id);
+  }
+  return provider;
 }
 
 let petWindow = null;
@@ -231,21 +287,21 @@ function hideChatWindow() {
   step();
 }
 
-/* ─── DeepSeek API ─── */
-async function callDeepSeek(messages, apiKey) {
-  const apiKeyToUse = apiKey || store.get('apiKey');
-  if (!apiKeyToUse) {
-    return '你还没设置DeepSeek API Key哦！请在聊天窗口的设置里输入API Key~';
+/* ─── AI API ─── */
+async function callAI(messages) {
+  const provider = getActiveModelProvider();
+  if (!provider.apiKey) {
+    return `你还没设置${provider.name}的API Key哦！请在聊天窗口的设置里输入API Key~`;
   }
 
-  const resp = await fetch('https://api.deepseek.com/chat/completions', {
+  const resp = await fetch(provider.apiBaseUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKeyToUse}`
+      'Authorization': `Bearer ${provider.apiKey}`
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: provider.modelName,
       messages,
       temperature: 0.8,
       max_tokens: 2000
@@ -262,8 +318,11 @@ async function callDeepSeek(messages, apiKey) {
 }
 
 /* ─── API Key Validation ─── */
-async function validateApiKey(apiKey) {
-  if (!apiKey || !apiKey.trim()) {
+async function validateModelApiKey(providerId) {
+  const id = providerId || store.get('activeModelProviderId') || 'deepseek';
+  const providers = getModelProviders();
+  const provider = providers.find(p => p.id === id);
+  if (!provider || !provider.apiKey || !provider.apiKey.trim()) {
     return { valid: false, reason: 'no-key' };
   }
 
@@ -271,14 +330,14 @@ async function validateApiKey(apiKey) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const resp = await fetch('https://api.deepseek.com/chat/completions', {
+    const resp = await fetch(provider.apiBaseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${provider.apiKey}`
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: provider.modelName,
         messages: [{ role: 'user', content: 'hi' }],
         max_tokens: 1
       }),
@@ -299,13 +358,13 @@ async function validateApiKey(apiKey) {
   }
 }
 
-async function generateConversationTitle(userMessage, aiResponse, apiKey) {
+async function generateConversationTitle(userMessage, aiResponse) {
   const summaryPrompt = [
     { role: 'system', content: '你是一个标题生成器。根据对话内容生成一个简短的标题（10个字以内，不要引号，不要句号）。只输出标题本身，不要任何其他文字。' },
     { role: 'user', content: `用户: ${userMessage.slice(0, 200)}\n\nAI: ${aiResponse.slice(0, 200)}\n\n请为以上对话生成一个简短标题。` }
   ];
   try {
-    return await callDeepSeek(summaryPrompt, apiKey);
+    return await callAI(summaryPrompt);
   } catch {
     return null;
   }
@@ -314,7 +373,7 @@ async function generateConversationTitle(userMessage, aiResponse, apiKey) {
 function buildSystemPrompt(searchContext) {
   const now = new Date();
   const todayStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
-  const theme = getTheme(store.get('activeTheme') || 'orange');
+  const theme = getTheme(store.get('activeTheme') || 'claude');
 
   let content = `今天是${todayStr}。
 
@@ -468,9 +527,9 @@ async function readFileContent(filePath) {
 
 /* ─── IPC handlers ─── */
 ipcMain.handle('send-message', async (_event, message) => {
-  const apiKey = store.get('apiKey');
-  if (!apiKey) {
-    return '你还没设置API Key呢！请在右上角⚙️设置中输入DeepSeek API Key~';
+  const provider = getActiveModelProvider();
+  if (!provider.apiKey) {
+    return `你还没设置${provider.name}的API Key呢！请在右上角⚙️设置中输入API Key~`;
   }
 
   const { conv, convs } = getActiveConversation();
@@ -478,14 +537,12 @@ ipcMain.handle('send-message', async (_event, message) => {
 
   let searchContext = null;
   if (store.get('searchEnabled')) {
-    // Weather queries: fetch real-time weather data
     if (isWeatherQuery(message)) {
       const weatherData = await fetchWeatherData();
       if (weatherData) {
         searchContext = weatherData;
       }
     }
-    // If no weather data, fall back to Bing search
     if (!searchContext) {
       const results = await performWebSearch(message);
       if (results) {
@@ -498,13 +555,12 @@ ipcMain.handle('send-message', async (_event, message) => {
   const recentHistory = messages.slice(-30);
 
   try {
-    const reply = await callDeepSeek(recentHistory, apiKey);
+    const reply = await callAI(recentHistory);
     conv.messages.push({ role: 'user', content: message });
     conv.messages.push({ role: 'assistant', content: reply });
 
-    // Auto-title via AI summary
     if (conv.title === '新对话') {
-      const summary = await generateConversationTitle(message, reply, apiKey);
+      const summary = await generateConversationTitle(message, reply);
       conv.title = summary || message.slice(0, 20) + (message.length > 20 ? '...' : '');
     }
 
@@ -518,16 +574,16 @@ ipcMain.handle('send-message', async (_event, message) => {
 });
 
 ipcMain.handle('analyze-file', async (_event, filePath) => {
-  const apiKey = store.get('apiKey');
-  if (!apiKey) {
-    return '你还没设置API Key呢！请先在聊天窗口设置API Key~';
+  const provider = getActiveModelProvider();
+  if (!provider.apiKey) {
+    return `你还没设置${provider.name}的API Key呢！请先在聊天窗口设置API Key~`;
   }
 
   const fileName = path.basename(filePath);
   const content = await readFileContent(filePath);
 
   if (content === null) {
-    const theme = getTheme(store.get('activeTheme') || 'orange');
+    const theme = getTheme(store.get('activeTheme') || 'claude');
     return `${theme.name}还不支持"${path.extname(filePath)}"这种文件格式哦，试试 .txt / .pdf / .docx 文件吧~`;
   }
 
@@ -547,14 +603,14 @@ ipcMain.handle('analyze-file', async (_event, filePath) => {
   ];
 
   try {
-    const reply = await callDeepSeek(messages, apiKey);
+    const reply = await callAI(messages);
     const { conv, convs } = getActiveConversation();
     conv.messages.push({ role: 'user', content: `📄 拖入文件: ${fileName}` });
     conv.messages.push({ role: 'assistant', content: reply });
     if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
     if (conv.title === '新对话') {
       const summary = await generateConversationTitle(
-        `用户导入文件: ${fileName}`, reply, apiKey
+        `用户导入文件: ${fileName}`, reply
       );
       conv.title = summary || `文件分析: ${fileName}`;
     }
@@ -682,13 +738,55 @@ ipcMain.handle('import-file', async () => {
   return { fileName, content: truncated };
 });
 
-ipcMain.handle('save-api-key', (_event, key) => {
-  store.set('apiKey', key.trim());
+/* ─── Model Provider IPC ─── */
+ipcMain.handle('get-model-providers', () => {
+  ensurePresetProviders();
+  return getModelProviders();
+});
+
+ipcMain.handle('save-model-provider', (_event, provider) => {
+  const providers = getModelProviders();
+  const idx = providers.findIndex(p => p.id === provider.id);
+  if (idx >= 0) {
+    providers[idx] = { ...providers[idx], ...provider };
+  } else {
+    providers.push(provider);
+  }
+  saveModelProviders(providers);
   return true;
 });
 
-ipcMain.handle('get-api-key', () => {
-  return store.get('apiKey') || '';
+ipcMain.handle('delete-model-provider', (_event, id) => {
+  const providers = getModelProviders();
+  const provider = providers.find(p => p.id === id);
+  if (!provider || provider.type === 'preset') return false;
+  const idx = providers.findIndex(p => p.id === id);
+  if (idx >= 0) {
+    providers.splice(idx, 1);
+    saveModelProviders(providers);
+    if (store.get('activeModelProviderId') === id) {
+      store.set('activeModelProviderId', providers[0]?.id || 'deepseek');
+    }
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('get-active-model-provider', () => {
+  return getActiveModelProvider();
+});
+
+ipcMain.handle('set-active-model-provider', (_event, id) => {
+  const providers = getModelProviders();
+  if (providers.some(p => p.id === id)) {
+    store.set('activeModelProviderId', id);
+    return getActiveModelProvider();
+  }
+  return null;
+});
+
+ipcMain.handle('validate-model-api-key', async (_event, providerId) => {
+  return await validateModelApiKey(providerId);
 });
 
 ipcMain.handle('toggle-search', () => {
@@ -710,13 +808,8 @@ ipcMain.handle('get-personality', () => {
   return store.get('personalityPrompt') || '';
 });
 
-ipcMain.handle('validate-api-key', async () => {
-  const apiKey = store.get('apiKey');
-  return await validateApiKey(apiKey);
-});
-
 ipcMain.handle('get-theme', () => {
-  const themeId = store.get('activeTheme') || 'orange';
+  const themeId = store.get('activeTheme') || 'claude';
   return getTheme(themeId);
 });
 
@@ -791,6 +884,27 @@ ipcMain.on('quit-app', () => {
 
 /* ─── App lifecycle ─── */
 app.whenReady().then(() => {
+  // Migrate old single apiKey to modelProviders array
+  const oldApiKey = store.get('apiKey');
+  if (oldApiKey !== undefined) {
+    const providers = store.get('modelProviders');
+    if (!providers || providers.length === 0) {
+      store.set('modelProviders', [
+        {
+          id: 'deepseek',
+          name: 'DeepSeek',
+          type: 'preset',
+          apiKey: oldApiKey || '',
+          apiBaseUrl: 'https://api.deepseek.com/chat/completions',
+          modelName: 'deepseek-chat',
+          order: 0
+        }
+      ]);
+      store.set('activeModelProviderId', 'deepseek');
+    }
+    store.delete('apiKey');
+  }
+
   // Migrate old chatHistory to new conversations model
   const conversations = store.get('conversations');
   if (!conversations || conversations.length === 0) {

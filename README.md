@@ -1,20 +1,21 @@
 # desktop-pet
 
-> 一只住在你Mac电脑桌面上的AI桌宠，搭载DeepSeek AI，可以陪你聊天、帮你分析文档、联网搜索信息。
+> 一只住在你Mac电脑桌面上的AI桌宠，支持 DeepSeek / OpenAI(ChatGPT) / 自定义模型，可以陪你聊天、帮你分析文档、联网搜索信息。
 
-An AI desktop pet for macOS, powered by DeepSeek AI. Chat, analyze documents, and search the web — all from a cute floating companion.
+An AI desktop pet for macOS, supporting DeepSeek, OpenAI (ChatGPT), and custom model providers. Chat, analyze documents, and search the web — all from a cute floating companion.
 
 ## 功能特性 / Features
 
 - 🐱 **多形象切换** — 小橘（原创橘猫SVG）、小奶娃、极限战士（战锤40K Ultramarines）、Claude（💠 代码风格形象），独立名称/性格/UI配色/欢迎词/气泡消息
-- 💬 **AI聊天** — 基于DeepSeek API的智能对话，每个形象有专属性格语气（用户可叠加自定义）
+- 💬 **多模型AI聊天** — 支持 DeepSeek / OpenAI(ChatGPT) / 自定义模型，每个模型独立API Key和端点URL（可配置代理），每个形象有专属性格语气（用户可叠加自定义）
 - 📄 **文档分析** — 拖拽到桌宠嘴巴或点击📎导入TXT/PDF/DOCX/MD/JSON/CSV文件，AI自动分析总结
 - 🌐 **联网搜索** — 可选开启（设置面板中切换），Bing搜索 + wttr.in天气自动检测
 - 🌦️ **天气查询** — 自动识别天气类问题，通过wttr.in获取实时天气数据
 - 📝 **多对话管理** — 自定义下拉菜单切换/删除对话，AI自动总结对话标题
 - 🎨 **个性化语气** — 自定义AI说话风格（霸道总裁、说英文、更毒舌...），叠加在主题性格之上
 - 🪟 **液态玻璃UI** — macOS原生vibrancy毛玻璃效果 + backdrop-filter模糊 + 可拖拽调整窗口尺寸
-- 🔑 **启动时API Key验证** — 自动检测Key有效性，失效/未设置时弹出提醒
+- 🔑 **启动时API Key验证** — 自动检测当前模型Key有效性，失效/未设置时弹出提醒
+- ➕ **自定义模型** — 支持添加任意OpenAI兼容API（如代理、第三方服务），自定义名称/端点/模型标识
 - 🗣️ **主题对话气泡** — 每个形象有专属的悬停打招呼、闲置话语、投喂文案；Claude主题使用cyber代码风格气泡（深色背景+蓝色代码字体）
 - 📋 **消息复制** — 用户和AI消息均可一键复制
 - 💾 **本地存储** — API Key和聊天记录完全本地化（electron-store），不上传任何第三方
@@ -25,7 +26,7 @@ An AI desktop pet for macOS, powered by DeepSeek AI. Chat, analyze documents, an
 - **macOS** 10.13+（使用了NSPanel专用API，仅支持macOS）
 - **Node.js** 18.x 或 20.x LTS（⚠️ 不支持v24，有已知兼容性问题）
 - **Python 3** + Pillow（仅生成图标时需要）
-- **DeepSeek API Key**（[免费注册获取](https://platform.deepseek.com/)）
+- **AI API Key** — DeepSeek（[免费注册](https://platform.deepseek.com/)）/ OpenAI（[注册获取](https://platform.openai.com/)）/ 或兼容OpenAI格式的自定义服务
 
 ## 安装 / Installation
 
@@ -104,6 +105,12 @@ A: 在终端中执行 `unset ELECTRON_RUN_AS_NODE` 后再运行 `npm start`。
 **Q: DeepSeek API Key怎么获取？**  
 A: 访问 [platform.deepseek.com](https://platform.deepseek.com/) 注册账号，在API Keys页面创建Key。费用极低。
 
+**Q: 可以使用OpenAI/ChatGPT吗？**  
+A: 支持。打开设置⚙️，在"AI 模型"下拉菜单中切换到"OpenAI / ChatGPT"，输入你的OpenAI API Key即可。如果遇到网络问题（中国大陆），可通过"+ 添加自定义模型"配置代理端点。
+
+**Q: 怎么添加自定义模型/代理？**  
+A: 打开设置⚙️ → 点击"+ 添加自定义模型" → 填写模型名称、API端点URL（如代理地址）、模型标识（如gpt-4o）、API Key。适合使用第三方API代理或兼容OpenAI格式的其他模型。
+
 **Q: 联网搜索怎么开启？**  
 A: 打开聊天侧边栏，点击右上角🌐按钮切换。搜索通过抓取Bing实现，无需额外API Key。
 
@@ -116,7 +123,7 @@ A: 目前不支持。桌宠使用了macOS专属的NSPanel窗口类型（`type: '
 ## 技术栈 / Tech Stack
 
 - [Electron](https://www.electronjs.org/) 33.x
-- [DeepSeek API](https://platform.deepseek.com/) (deepseek-chat)
+- [DeepSeek API](https://platform.deepseek.com/) / [OpenAI API](https://platform.openai.com/) / 自定义兼容API — 多模型支持
 - [electron-store](https://github.com/sindresorhus/electron-store) — 本地持久化
 - [mammoth](https://github.com/mwilliamson/mammoth.js) — DOCX解析
 - [pdf-parse](https://github.com/nisaacson/pdf-parse) — PDF解析

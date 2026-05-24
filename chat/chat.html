@@ -37,10 +37,31 @@
           <span class="warning-icon">&#9888;&#65039;</span>
           <span class="warning-text" id="warningText"></span>
         </div>
+        <!-- AI Model -->
         <div class="settings-section">
-          <label class="settings-label">DeepSeek API Key</label>
-          <input type="password" class="settings-input" id="apiKeyInput" placeholder="sk-...">
-          <button class="settings-save" id="saveKeyBtn">保存</button>
+          <label class="settings-label">AI 模型</label>
+          <select class="settings-input" id="modelSelect"></select>
+        </div>
+        <div class="settings-section" id="modelConfigSection">
+          <div id="modelCustomFields" style="display:none;">
+            <label class="settings-label">模型名称</label>
+            <input type="text" class="settings-input" id="modelNameInput" placeholder="例如：My GPT">
+            <label class="settings-label">API 端点 URL</label>
+            <input type="text" class="settings-input" id="modelUrlInput" placeholder="https://api.example.com/v1/chat/completions">
+            <label class="settings-label">模型标识</label>
+            <input type="text" class="settings-input" id="modelModelIdInput" placeholder="gpt-4o">
+          </div>
+          <label class="settings-label" id="apiKeyLabel">API Key</label>
+          <div class="settings-input-row">
+            <input type="password" class="settings-input settings-input-grow" id="apiKeyInput" placeholder="sk-...">
+            <button class="settings-save settings-save-small" id="saveKeyBtn">保存</button>
+          </div>
+          <span class="settings-info" id="modelInfo"></span>
+          <span class="settings-validation" id="keyValidation" style="display:none;"></span>
+        </div>
+        <div class="settings-section">
+          <button class="settings-save settings-save-outline" id="addModelBtn">+ 添加自定义模型</button>
+          <button class="settings-save settings-save-outline" id="deleteModelBtn" style="display:none;margin-top:6px;">删除此模型</button>
         </div>
         <div class="settings-divider"></div>
         <div class="settings-section">

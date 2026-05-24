@@ -18,10 +18,13 @@ contextBridge.exposeInMainWorld('petAPI', {
   // File import
   importFile: () => ipcRenderer.invoke('import-file'),
 
-  // API Key
-  saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
-  getApiKey: () => ipcRenderer.invoke('get-api-key'),
-  validateApiKey: () => ipcRenderer.invoke('validate-api-key'),
+  // Model Providers
+  getModelProviders: () => ipcRenderer.invoke('get-model-providers'),
+  saveModelProvider: (provider) => ipcRenderer.invoke('save-model-provider', provider),
+  deleteModelProvider: (id) => ipcRenderer.invoke('delete-model-provider', id),
+  getActiveModelProvider: () => ipcRenderer.invoke('get-active-model-provider'),
+  setActiveModelProvider: (id) => ipcRenderer.invoke('set-active-model-provider', id),
+  validateModelApiKey: (providerId) => ipcRenderer.invoke('validate-model-api-key', providerId),
 
   // Search toggle
   toggleSearch: () => ipcRenderer.invoke('toggle-search'),
