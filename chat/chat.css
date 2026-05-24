@@ -154,10 +154,11 @@ body {
   padding: 16px;
   max-height: 400px;
   overflow-y: auto;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  border-bottom: 0.5px solid rgba(0,0,0,0.08);
+  color: #1d1d1f;
 }
 .settings-panel.open { display: block; }
 .settings-label {
@@ -167,9 +168,9 @@ body {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid var(--surface2);
-  background: var(--input-bg);
-  color: var(--text);
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.04);
+  color: #1d1d1f;
   font-size: 13px;
   outline: none;
   margin-bottom: 8px;
@@ -199,11 +200,11 @@ body {
 }
 .settings-divider {
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.08);
   margin: 14px 0;
 }
 .settings-hint {
-  font-size: 11px; color: var(--text2); margin-top: 10px;
+  font-size: 11px; color: #6e6e73; margin-top: 10px;
 }
 
 /* ─── Model config ─── */
@@ -223,8 +224,8 @@ body {
 }
 .settings-save-outline {
   background: transparent;
-  border: 1px dashed var(--surface2);
-  color: var(--text2);
+  border: 1px dashed rgba(0,0,0,0.15);
+  color: #6e6e73;
   width: 100%;
   margin-bottom: 4px;
 }
@@ -238,12 +239,12 @@ body {
   display: block;
   margin-top: 2px;
 }
-.settings-validation.valid { color: #4CAF50; }
-.settings-validation.invalid { color: #FF453A; }
+.settings-validation.valid { color: #2E7D32; }
+.settings-validation.invalid { color: #C62828; }
 
 .settings-info {
   font-size: 11px;
-  color: var(--text2);
+  color: #6e6e73;
   display: block;
   margin-top: -4px;
   margin-bottom: 8px;

@@ -201,24 +201,31 @@ function applyPetTheme(theme) {
     bubble.classList.remove('cyber');
   }
 
-  // Warrior & Claude SVGs need explicit sizing
+  // Warrior & Claude SVGs need explicit sizing + per-theme window resize
   if (theme.id === 'warrior') {
     petNormalImg.style.width = '128px';
     petNormalImg.style.height = '128px';
     petMouthOpenImg.style.width = '128px';
     petMouthOpenImg.style.height = '128px';
+    bubble.style.top = '-12px';
+    bubble.style.maxWidth = '';
+    window.petAPI.resizePet(145, 170);
   } else if (theme.id === 'claude') {
     petNormalImg.style.width = '85px';
     petNormalImg.style.height = '85px';
     petMouthOpenImg.style.width = '85px';
     petMouthOpenImg.style.height = '85px';
-    bubble.style.top = '-52px';
+    bubble.style.top = '-30px';
+    bubble.style.maxWidth = '120px';
+    window.petAPI.resizePet(140, 170);
   } else {
     petNormalImg.style.width = '';
     petNormalImg.style.height = '';
     petMouthOpenImg.style.width = '';
     petMouthOpenImg.style.height = '';
-    bubble.style.top = '';
+    bubble.style.top = '-12px';
+    bubble.style.maxWidth = '';
+    window.petAPI.resizePet(145, 170);
   }
 }
 

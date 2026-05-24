@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // Window controls
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', width, height),
+  resizePet: (width, height) => ipcRenderer.send('resize-pet', width, height),
   openChat: () => ipcRenderer.send('open-chat'),
   showChat: () => ipcRenderer.send('show-chat'),
   closeChat: () => ipcRenderer.send('close-chat'),

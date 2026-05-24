@@ -140,8 +140,8 @@ function createPetWindow() {
   const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
   const savedPos = store.get('petPosition');
 
-  const petWidth = 170;
-  const petHeight = 210;
+  const petWidth = 145;
+  const petHeight = 170;
   const x = savedPos != null ? savedPos.x : screenWidth - petWidth - 40;
   const y = savedPos != null ? savedPos.y : 30;
 
@@ -867,6 +867,13 @@ ipcMain.on('move-window', (_event, dx, dy) => {
   if (petWindow) {
     const [x, y] = petWindow.getPosition();
     petWindow.setPosition(x + dx, y + dy);
+  }
+});
+
+ipcMain.on('resize-pet', (_event, width, height) => {
+  if (petWindow) {
+    const [x, y] = petWindow.getPosition();
+    petWindow.setBounds({ x, y, width, height });
   }
 });
 
