@@ -2,9 +2,9 @@
 
 :root {
   --bg: transparent;
-  --input-bg: rgba(120, 120, 128, 0.18);
-  --surface: rgba(60, 60, 67, 0.55);
-  --surface2: rgba(100, 100, 110, 0.45);
+  --input-bg: rgba(120, 120, 128, 0.08);
+  --surface: rgba(60, 60, 67, 0.18);
+  --surface2: rgba(100, 100, 110, 0.15);
   --text: #f5f5f7;
   --text2: rgba(245, 245, 247, 0.65);
   --accent: #FFB347;
@@ -34,10 +34,10 @@ body {
   justify-content: space-between;
   padding: 14px 16px;
   background: var(--surface);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   -webkit-app-region: drag;
-  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
   position: relative;
   z-index: 10;
 }
@@ -89,8 +89,8 @@ body {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #2c2c2e;
-  border: 0.5px solid rgba(255,255,255,0.15);
+  background: rgba(44, 44, 46, 0.75);
+  border: 0.5px solid rgba(255,255,255,0.1);
   border-radius: 8px;
   overflow: hidden;
   z-index: 9999;
@@ -155,9 +155,9 @@ body {
   max-height: 300px;
   overflow-y: auto;
   background: var(--surface);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
 }
 .settings-panel.open { display: block; }
 .settings-label {
@@ -392,6 +392,27 @@ body {
   font-size: 12px;
 }
 
+/* Cyber/code style chat bubbles (Claude theme) */
+body.cyber .message.assistant {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 13px;
+  background: rgba(13, 17, 23, 0.7);
+  border: 0.5px solid rgba(88, 166, 255, 0.15);
+  border-left: 2px solid #58a6ff;
+}
+body.cyber .message.assistant code {
+  background: rgba(88, 166, 255, 0.12);
+  color: #58a6ff;
+}
+body.cyber .typing-dots {
+  background: rgba(13, 17, 23, 0.7);
+  border: 0.5px solid rgba(88, 166, 255, 0.15);
+  border-left: 2px solid #58a6ff;
+}
+body.cyber .typing-dots span {
+  background: #58a6ff;
+}
+
 /* Typing indicator */
 .typing-dots {
   align-self: flex-start;
@@ -423,9 +444,9 @@ body {
   gap: 8px;
   padding: 12px 16px;
   background: var(--surface);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border-top: 0.5px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-top: 0.5px solid rgba(255,255,255,0.06);
 }
 .chat-input {
   flex: 1;

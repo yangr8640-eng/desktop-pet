@@ -44,9 +44,9 @@ function hexToRgb(hex) {
     : '255, 179, 71';
 }
 
-let currentWelcomeEmoji = '🧡';
-let currentWelcomeGreeting = '你好呀~ 我是小橘！';
-let currentWelcomeSubtitle = '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~';
+let currentWelcomeEmoji = '💠';
+let currentWelcomeGreeting = 'Hello! 我是Claude。💠';
+let currentWelcomeSubtitle = '有什么我可以帮你的？用代码说话也行，用自然语言聊天也可以~';
 
 function applyTheme(theme) {
   currentWelcomeEmoji = theme.emoji;
@@ -57,6 +57,13 @@ function applyTheme(theme) {
   root.style.setProperty('--accent', theme.accentColor);
   root.style.setProperty('--accent-dark', theme.accentColorDark);
   root.style.setProperty('--accent-rgb', hexToRgb(theme.accentColor));
+
+  // Toggle cyber class on body for code-style bubbles
+  if (theme.bubbleStyle === 'cyber') {
+    document.body.classList.add('cyber');
+  } else {
+    document.body.classList.remove('cyber');
+  }
 
   headerIcon.textContent = theme.emoji;
   headerTitle.textContent = theme.name;

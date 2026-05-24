@@ -92,6 +92,20 @@
       animation: bubblePop 0.3s ease forwards;
       opacity: 1;
     }
+
+    /* Cyber/code style speech bubble */
+    .speech-bubble.cyber {
+      background: #0d1117;
+      color: #58a6ff;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 11px;
+      border: 0.5px solid rgba(88, 166, 255, 0.3);
+      box-shadow: 0 1px 12px rgba(88, 166, 255, 0.15);
+      border-radius: 8px;
+    }
+    .speech-bubble.cyber::after {
+      border-top-color: #0d1117;
+    }
   </style>
 </head>
 <body>
@@ -99,8 +113,8 @@
     <div class="pet-wrapper" id="petWrapper">
       <div class="speech-bubble" id="speechBubble">嗨~ 💛</div>
       <div class="cat-interactive">
-        <img src="themes/orange/normal.svg" class="pet-img" id="petNormalImg" alt="pet" draggable="false" />
-        <img src="themes/orange/mouthopen.svg" class="pet-img" id="petMouthOpenImg" alt="pet open mouth" draggable="false" />
+        <img src="themes/claude/normal.svg" class="pet-img" id="petNormalImg" alt="pet" draggable="false" />
+        <img src="themes/claude/mouthopen.svg" class="pet-img" id="petMouthOpenImg" alt="pet open mouth" draggable="false" />
       </div>
     </div>
   </div>

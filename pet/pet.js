@@ -174,11 +174,18 @@ const themeMessages = {
     dragHere: '提交情报，战士。📜',
     eating: '接收情报中...',
     analyzing: '战略分析中... 📜'
+  },
+  claude: {
+    greeting: '> Hello, world. 💠',
+    idle: ['> idle...', '> listening...', '> ready for input.', '> thinking... 🤔', '> compiling thoughts...', '> awaiting prompt.'],
+    dragHere: '> drop file here... 📂',
+    eating: '> reading bytes...',
+    analyzing: '> analyzing... 🔍'
   }
 };
 
-let currentMessages = themeMessages.orange;
-let currentThemeEmoji = '🧡';
+let currentMessages = themeMessages.claude;
+let currentThemeEmoji = '💠';
 
 /* ─── Theme ─── */
 function applyPetTheme(theme) {
@@ -187,17 +194,31 @@ function applyPetTheme(theme) {
   currentThemeEmoji = theme.emoji;
   currentMessages = themeMessages[theme.id] || themeMessages.orange;
 
-  // Warrior SVGs have large viewBox, size to match other themes
+  // Apply cyber/code bubble style
+  if (theme.bubbleStyle === 'cyber') {
+    bubble.classList.add('cyber');
+  } else {
+    bubble.classList.remove('cyber');
+  }
+
+  // Warrior & Claude SVGs need explicit sizing
   if (theme.id === 'warrior') {
     petNormalImg.style.width = '128px';
     petNormalImg.style.height = '128px';
     petMouthOpenImg.style.width = '128px';
     petMouthOpenImg.style.height = '128px';
+  } else if (theme.id === 'claude') {
+    petNormalImg.style.width = '85px';
+    petNormalImg.style.height = '85px';
+    petMouthOpenImg.style.width = '85px';
+    petMouthOpenImg.style.height = '85px';
+    bubble.style.top = '-52px';
   } else {
     petNormalImg.style.width = '';
     petNormalImg.style.height = '';
     petMouthOpenImg.style.width = '';
     petMouthOpenImg.style.height = '';
+    bubble.style.top = '';
   }
 }
 

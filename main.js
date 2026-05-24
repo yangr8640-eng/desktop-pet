@@ -17,7 +17,7 @@ const store = new Store({
     apiKey: '',
     searchEnabled: false,
     personalityPrompt: '',
-    activeTheme: 'orange'
+    activeTheme: 'claude'
   }
 });
 
