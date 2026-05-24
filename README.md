@@ -1,5 +1,7 @@
 # desktop-pet
 
+> 🪟 **Windows 版** — 此为 `windows` 分支 | [🍎 macOS 版请切换到 `main` 分支](https://github.com/yangr8640-eng/desktop-pet)
+
 > 一只住在你电脑桌面上的AI桌宠，支持 DeepSeek / OpenAI(ChatGPT) / 自定义模型，可以陪你聊天、帮你分析文档、联网搜索信息。**兼容 macOS 和 Windows。**
 
 An AI desktop pet for macOS and Windows, supporting DeepSeek, OpenAI (ChatGPT), and custom model providers. Chat, analyze documents, and search the web — all from a cute floating companion.
