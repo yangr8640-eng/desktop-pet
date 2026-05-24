@@ -19,6 +19,7 @@ const importBtn = document.getElementById('importBtn');
 const typingDots = document.getElementById('typingDots') || createTypingIndicator();
 const personalityInput = document.getElementById('personalityInput');
 const savePersonalityBtn = document.getElementById('savePersonalityBtn');
+const exportSettingsBtn = document.getElementById('exportSettingsBtn');
 const themeSelect = document.getElementById('themeSelect');
 const headerIcon = document.getElementById('headerIcon');
 const headerTitle = document.getElementById('headerTitle');
@@ -39,6 +40,7 @@ let isSearchEnabled = false;
 let isSwitchingConversation = false;
 let currentModelProvider = null;
 let modelProviders = [];
+let streamCleanup = null;
 
 function createTypingIndicator() {
   const el = document.createElement('div');
@@ -164,6 +166,9 @@ async function init() {
       messagesArea.scrollTop = messagesArea.scrollHeight;
     }, 100);
   });
+
+  // Auto-update listeners
+  setupUpdateListeners();
 }
 
 /* ─── Conversation management ─── */
@@ -270,7 +275,15 @@ async function loadConversationMessages() {
   messagesArea.appendChild(typingDots);
 
   if (history && history.length > 0) {
-    history.forEach(msg => addMessage(msg.role, msg.content, false));
+    history.forEach((msg, i) => addMessage(msg.role, msg.content, false, i));
+    // Only the last assistant message should have the regen button
+    const assistantMsgs = messagesArea.querySelectorAll('.message.assistant');
+    assistantMsgs.forEach((m, i) => {
+      if (i < assistantMsgs.length - 1) {
+        const btn = m.querySelector('.regen-btn');
+        if (btn) btn.remove();
+      }
+    });
   } else {
     messagesArea.innerHTML = renderWelcomeMessage('有什么想聊的吗？');
     messagesArea.appendChild(typingDots);
@@ -280,12 +293,13 @@ async function loadConversationMessages() {
 }
 
 /* ─── Add message to UI ─── */
-function addMessage(role, content, animate = true) {
+function addMessage(role, content, animate = true, messageIndex = -1) {
   const welcome = messagesArea.querySelector('.welcome-msg');
   if (welcome) welcome.remove();
 
   const div = document.createElement('div');
   div.className = `message ${role}`;
+  if (messageIndex >= 0) div.dataset.msgIndex = messageIndex;
 
   let html = content
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -297,8 +311,9 @@ function addMessage(role, content, animate = true) {
   div.innerHTML = html;
   if (!animate) div.style.animation = 'none';
 
-  // Add copy button for assistant messages
+  // Add action buttons
   if (role === 'user' || role === 'assistant') {
+    // Copy button
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-btn';
     copyBtn.innerHTML = '📋';
@@ -314,10 +329,239 @@ function addMessage(role, content, animate = true) {
       }, 1500);
     });
     div.appendChild(copyBtn);
+
+    // Edit button for user messages
+    if (role === 'user' && messageIndex >= 0) {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'copy-btn edit-btn';
+      editBtn.innerHTML = '✏️';
+      editBtn.title = '编辑';
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        editUserMessage(div, content, messageIndex);
+      });
+      div.appendChild(editBtn);
+    }
+
+    // Regenerate button for assistant messages
+    if (role === 'assistant') {
+      const regenBtn = document.createElement('button');
+      regenBtn.className = 'copy-btn regen-btn';
+      regenBtn.innerHTML = '🔄';
+      regenBtn.title = '重新生成';
+      regenBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        regenerateLastMessage();
+      });
+      div.appendChild(regenBtn);
+    }
   }
 
   messagesArea.insertBefore(div, typingDots);
   messagesArea.scrollTop = messagesArea.scrollHeight;
+  return div;
+}
+
+/* ─── Create empty assistant message skeleton for streaming ─── */
+function createAssistantMessageSkeleton() {
+  const welcome = messagesArea.querySelector('.welcome-msg');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = 'message assistant';
+  messagesArea.insertBefore(div, typingDots);
+  return div;
+}
+
+/* ─── Render markdown into a streaming skeleton div ─── */
+function renderMarkdownInPlace(div, content) {
+  let html = content
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+
+  div.innerHTML = html;
+
+  // Add copy button
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-btn';
+  copyBtn.innerHTML = '📋';
+  copyBtn.title = '复制';
+  copyBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(content);
+    copyBtn.innerHTML = '✓';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.innerHTML = '📋';
+      copyBtn.classList.remove('copied');
+    }, 1500);
+  });
+  div.appendChild(copyBtn);
+
+  // Remove regen buttons from all other assistant messages
+  messagesArea.querySelectorAll('.message.assistant .regen-btn').forEach(b => b.remove());
+  // Add regenerate button
+  const regenBtn = document.createElement('button');
+  regenBtn.className = 'copy-btn regen-btn';
+  regenBtn.innerHTML = '🔄';
+  regenBtn.title = '重新生成';
+  regenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    regenerateLastMessage();
+  });
+  div.appendChild(regenBtn);
+}
+
+/* ─── Common streaming send logic ─── */
+function startStreamingRequest(userText, showUserMessage = true) {
+  if (showUserMessage) {
+    addMessage('user', userText);
+  }
+  typingDots.classList.add('show');
+
+  const assistantDiv = createAssistantMessageSkeleton();
+  let fullContent = '';
+
+  // Clean up previous listener
+  if (streamCleanup) streamCleanup();
+
+  streamCleanup = window.petAPI.onStreamChunk((data) => {
+    if (data.done) {
+      typingDots.classList.remove('show');
+      if (!data.error) {
+        renderMarkdownInPlace(assistantDiv, fullContent);
+      }
+      sendBtn.disabled = false;
+      isLoading = false;
+      chatInput.focus();
+      refreshConversationSelect();
+      if (streamCleanup) { streamCleanup(); streamCleanup = null; }
+    } else if (data.error) {
+      typingDots.classList.remove('show');
+      assistantDiv.innerHTML = `<p>哎呀，出错了: ${data.text}</p>`;
+      sendBtn.disabled = false;
+      isLoading = false;
+      if (streamCleanup) { streamCleanup(); streamCleanup = null; }
+    } else {
+      typingDots.classList.remove('show');
+      fullContent += data.text;
+      assistantDiv.textContent = fullContent;
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+  });
+}
+
+/* ─── Regenerate last message ─── */
+async function regenerateLastMessage() {
+  if (isLoading) return;
+
+  // Remove last assistant message from DOM
+  const assistantMessages = messagesArea.querySelectorAll('.message.assistant');
+  if (assistantMessages.length > 0) {
+    assistantMessages[assistantMessages.length - 1].remove();
+  }
+
+  isLoading = true;
+  sendBtn.disabled = true;
+  typingDots.classList.add('show');
+
+  const assistantDiv = createAssistantMessageSkeleton();
+  let fullContent = '';
+
+  if (streamCleanup) streamCleanup();
+
+  streamCleanup = window.petAPI.onStreamChunk((data) => {
+    if (data.done) {
+      typingDots.classList.remove('show');
+      if (!data.error) {
+        renderMarkdownInPlace(assistantDiv, fullContent);
+      }
+      sendBtn.disabled = false;
+      isLoading = false;
+      chatInput.focus();
+      refreshConversationSelect();
+      if (streamCleanup) { streamCleanup(); streamCleanup = null; }
+    } else if (data.error) {
+      typingDots.classList.remove('show');
+      assistantDiv.innerHTML = `<p>哎呀，出错了: ${data.text}</p>`;
+      sendBtn.disabled = false;
+      isLoading = false;
+      if (streamCleanup) { streamCleanup(); streamCleanup = null; }
+    } else {
+      typingDots.classList.remove('show');
+      fullContent += data.text;
+      assistantDiv.textContent = fullContent;
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+  });
+
+  window.petAPI.regenerateMessage();
+}
+
+/* ─── Edit user message ─── */
+function editUserMessage(messageDiv, originalContent, messageIndex) {
+  if (isLoading) return;
+
+  const originalHTML = messageDiv.innerHTML;
+  const textarea = document.createElement('textarea');
+  textarea.className = 'edit-textarea';
+  textarea.value = originalContent;
+  textarea.rows = Math.min(originalContent.split('\n').length, 6);
+
+  messageDiv.innerHTML = '';
+  messageDiv.appendChild(textarea);
+  textarea.focus();
+
+  let finished = false;
+
+  const finishEdit = async () => {
+    if (finished) return;
+    finished = true;
+
+    const newText = textarea.value.trim();
+    if (!newText || newText === originalContent) {
+      messageDiv.innerHTML = originalHTML;
+      return;
+    }
+
+    // Trim conversation at this message index
+    await window.petAPI.trimConversation(messageIndex);
+
+    // Remove this message and all following from DOM
+    let found = false;
+    const allMessages = [...messagesArea.querySelectorAll('.message')];
+    for (const msg of allMessages) {
+      if (msg === messageDiv) found = true;
+      if (found) msg.remove();
+    }
+
+    // Send the edited message as new
+    chatInput.value = newText;
+    await sendMessage();
+  };
+
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      finishEdit();
+    }
+    if (e.key === 'Escape') {
+      messageDiv.innerHTML = originalHTML;
+      finished = true;
+    }
+  });
+
+  textarea.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!finished) {
+        messageDiv.innerHTML = originalHTML;
+        finished = true;
+      }
+    }, 150);
+  });
 }
 
 /* ─── Send message ─── */
@@ -330,24 +574,8 @@ async function sendMessage() {
   sendBtn.disabled = true;
   isLoading = true;
 
-  addMessage('user', text);
-  typingDots.classList.add('show');
-  messagesArea.scrollTop = messagesArea.scrollHeight;
-
-  try {
-    const reply = await window.petAPI.sendMessage(text);
-    typingDots.classList.remove('show');
-    addMessage('assistant', reply);
-    // Refresh dropdown in case title was auto-generated
-    await refreshConversationSelect();
-  } catch (err) {
-    typingDots.classList.remove('show');
-    addMessage('assistant', `哎呀，发送失败了: ${err.message}`);
-  }
-
-  sendBtn.disabled = false;
-  isLoading = false;
-  chatInput.focus();
+  startStreamingRequest(text, true);
+  window.petAPI.sendMessage(text);
 }
 
 /* ─── File Import ─── */
@@ -366,27 +594,14 @@ importBtn.addEventListener('click', async () => {
   // Show file import message
   addMessage('user', `📄 导入文档：${result.fileName}`);
 
-  // Send document content to AI for analysis
-  typingDots.classList.add('show');
-  messagesArea.scrollTop = messagesArea.scrollHeight;
+  // Send document content to AI for analysis (streaming)
   sendBtn.disabled = true;
   isLoading = true;
 
   const analysisPrompt = `请帮我分析以下文档内容：\n\n文件名：${result.fileName}\n\n${result.content}`;
 
-  try {
-    const reply = await window.petAPI.sendMessage(analysisPrompt);
-    typingDots.classList.remove('show');
-    addMessage('assistant', reply);
-    await refreshConversationSelect();
-  } catch (err) {
-    typingDots.classList.remove('show');
-    addMessage('assistant', `哎呀，分析文件时出错了: ${err.message}`);
-  }
-
-  sendBtn.disabled = false;
-  isLoading = false;
-  chatInput.focus();
+  startStreamingRequest(analysisPrompt, false);
+  window.petAPI.sendMessage(analysisPrompt);
 });
 
 /* ─── Settings ─── */
@@ -410,6 +625,76 @@ async function initSearchToggle() {
     isSearchEnabled = await window.petAPI.toggleSearch();
     searchToggle.checked = isSearchEnabled;
     updateSearchHeaderButton();
+  });
+}
+
+/* ─── Auto Update ─── */
+const updateBanner = document.getElementById('updateBanner');
+const updateBannerText = document.getElementById('updateBannerText');
+const updateBannerBtn = document.getElementById('updateBannerBtn');
+const updateBannerDismiss = document.getElementById('updateBannerDismiss');
+
+function setupUpdateListeners() {
+  const channels = [
+    'update-available',
+    'update-not-available',
+    'update-download-progress',
+    'update-downloaded',
+    'update-error'
+  ];
+
+  channels.forEach(channel => {
+    window.petAPI.onUpdateEvent(channel, (data) => {
+      switch (channel) {
+        case 'update-available':
+          updateBannerText.textContent = `新版本 v${data.version} 可用`;
+          updateBannerBtn.textContent = '下载更新';
+          updateBannerBtn.onclick = () => {
+            updateBannerBtn.textContent = '下载中...';
+            updateBannerBtn.disabled = true;
+            window.petAPI.downloadUpdate();
+          };
+          updateBannerDismiss.style.display = 'flex';
+          updateBanner.style.display = 'flex';
+          break;
+
+        case 'update-download-progress':
+          updateBannerText.textContent = `正在下载更新... ${data.percent}%`;
+          updateBannerBtn.style.display = 'none';
+          updateBannerDismiss.style.display = 'none';
+          updateBanner.style.display = 'flex';
+          break;
+
+        case 'update-downloaded':
+          updateBannerText.textContent = `更新已下载，重启以安装`;
+          updateBannerBtn.textContent = '立即重启';
+          updateBannerBtn.style.display = 'inline-block';
+          updateBannerBtn.disabled = false;
+          updateBannerBtn.onclick = () => window.petAPI.quitAndInstall();
+          updateBannerDismiss.textContent = '稍后';
+          updateBannerDismiss.style.display = 'flex';
+          updateBanner.style.display = 'flex';
+          break;
+
+        case 'update-error':
+          updateBannerText.textContent = `更新失败: ${data.message}`;
+          updateBannerBtn.textContent = '重试';
+          updateBannerBtn.style.display = 'inline-block';
+          updateBannerBtn.disabled = false;
+          updateBannerBtn.onclick = () => {
+            updateBannerBtn.textContent = '下载中...';
+            updateBannerBtn.disabled = true;
+            window.petAPI.downloadUpdate();
+          };
+          updateBannerDismiss.style.display = 'flex';
+          updateBanner.style.display = 'flex';
+          break;
+      }
+    });
+  });
+
+  updateBannerDismiss.addEventListener('click', () => {
+    updateBanner.style.display = 'none';
   });
 }
 
@@ -583,6 +868,10 @@ savePersonalityBtn.addEventListener('click', async () => {
   }, 1500);
 });
 
+exportSettingsBtn.addEventListener('click', async () => {
+  await window.petAPI.exportConversation();
+});
+
 /* ─── Theme select ─── */
 themeSelect.addEventListener('change', async () => {
   await window.petAPI.setTheme(themeSelect.value);
@@ -628,7 +917,7 @@ let isResizing = false;
 let resizeDir = null;
 let resizeStart = {};
 
-const MIN_WIDTH = 360;
+const MIN_WIDTH = 420;
 function getMinHeight() {
   return Math.round(screen.availHeight * 0.7);
 }

@@ -346,6 +346,61 @@ body.win32 .settings-info {
   transform: translateX(18px);
 }
 
+/* ─── Update Banner ─── */
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 0;
+  background: rgba(var(--accent-rgb), 0.2);
+  border-bottom: 0.5px solid rgba(var(--accent-rgb), 0.3);
+  animation: warningIn 0.4s ease;
+  flex-shrink: 0;
+}
+.update-banner-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+  flex: 1;
+}
+.update-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.update-banner-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.update-banner-btn:hover { background: var(--accent-dark); }
+.update-banner-dismiss {
+  width: 22px; height: 22px;
+  border: none; border-radius: 5px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+}
+.update-banner-dismiss:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+}
+
 /* ─── API Key Warning ─── */
 .api-key-warning {
   display: flex;
@@ -440,6 +495,25 @@ body.win32 .settings-info {
   color: #1a1a1a;
   font-weight: bold;
 }
+.message.user .edit-btn {
+  position: absolute;
+  bottom: 2px;
+  left: 28px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.message.user:hover .edit-btn { opacity: 0.6; }
+.message.user .edit-btn:hover { opacity: 1; background: rgba(0,0,0,0.1); }
 .message.assistant {
   align-self: flex-start;
   background: var(--surface2);
@@ -471,6 +545,25 @@ body.win32 .settings-info {
   color: var(--accent);
   font-weight: bold;
 }
+.message.assistant .regen-btn {
+  position: absolute;
+  bottom: 2px;
+  right: 28px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.message.assistant:hover .regen-btn { opacity: 0.6; }
+.message.assistant .regen-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
 .message.assistant p { margin-bottom: 6px; }
 .message.assistant p:last-child { margin-bottom: 0; }
 .message.assistant code {
@@ -478,6 +571,26 @@ body.win32 .settings-info {
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 12px;
+}
+
+/* Edit textarea inside user message */
+.message.user .edit-textarea {
+  width: 100%;
+  min-width: 200px;
+  padding: 6px 8px;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  color: #1a1a1a;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+.message.user .edit-textarea:focus {
+  border-color: rgba(0,0,0,0.4);
+  background: rgba(255,255,255,0.3);
 }
 
 /* Cyber/code style chat bubbles (Claude theme) */

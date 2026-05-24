@@ -25,28 +25,43 @@
     "start": "electron .",
     "icon": "python3 generate_icon.py",
     "build": "electron-builder",
-    "prebuild": "npm run icon"
+    "prebuild": "npm run icon",
+    "postbuild": "node scripts/generate-latest-yml.js"
   },
   "build": {
     "appId": "com.desktoppet.cat",
     "productName": "DesktopPet",
+    "publish": {
+      "provider": "github",
+      "owner": "yangr8640-eng",
+      "repo": "desktop-pet"
+    },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "assets/icon.png",
       "category": "public.app-category.entertainment"
     },
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": ["x64", "arm64"]
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "signAndEditExecutable": false
     },
     "files": [
       "main.js",
       "preload.js",
+      "themes.js",
+      "src/**/*",
       "pet/**/*",
       "chat/**/*",
       "assets/**/*",
@@ -56,6 +71,7 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.3",
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5"
   },

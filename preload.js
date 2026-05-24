@@ -2,8 +2,13 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('petAPI', {
   // Chat
-  sendMessage: (msg) => ipcRenderer.invoke('send-message', msg),
-  analyzeFile: (filePath) => ipcRenderer.invoke('analyze-file', filePath),
+  sendMessage: (msg) => ipcRenderer.send('send-message', msg),
+  analyzeFile: (filePath) => ipcRenderer.send('analyze-file', filePath),
+  onStreamChunk: (cb) => {
+    const handler = (_event, data) => cb(data);
+    ipcRenderer.on('stream-chunk', handler);
+    return () => ipcRenderer.removeListener('stream-chunk', handler);
+  },
   getFilePath: (file) => webUtils.getPathForFile(file),
   getHistory: () => ipcRenderer.invoke('get-history'),
 
@@ -17,6 +22,13 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // File import
   importFile: () => ipcRenderer.invoke('import-file'),
+
+  // Export
+  exportConversation: () => ipcRenderer.invoke('export-conversation'),
+
+  // Message operations
+  regenerateMessage: () => ipcRenderer.send('regenerate-message'),
+  trimConversation: (messageIndex) => ipcRenderer.invoke('trim-conversation', messageIndex),
 
   // Model Providers
   getModelProviders: () => ipcRenderer.invoke('get-model-providers'),
@@ -52,6 +64,15 @@ contextBridge.exposeInMainWorld('petAPI', {
   savePosition: (pos) => ipcRenderer.send('save-position', pos),
   minimizeChat: () => ipcRenderer.send('minimize-chat'),
   quitApp: () => ipcRenderer.send('quit-app'),
+
+  // Auto update
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  onUpdateEvent: (channel, cb) => {
+    const handler = (_event, data) => cb(data);
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.removeListener(channel, handler);
+  },
 
   // Listen for events from main
   onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb()),

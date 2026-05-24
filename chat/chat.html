@@ -89,7 +89,20 @@
           <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
           <button class="settings-save" id="savePersonalityBtn">保存</button>
         </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <button class="settings-save settings-save-outline" id="exportSettingsBtn">📥 导出当前对话为 Markdown</button>
+        </div>
         <p class="settings-hint">API Key存储在本地，不会上传到任何第三方</p>
+      </div>
+    </div>
+
+    <!-- Update banner -->
+    <div class="update-banner" id="updateBanner" style="display:none;">
+      <span class="update-banner-text" id="updateBannerText"></span>
+      <div class="update-banner-actions">
+        <button class="update-banner-btn" id="updateBannerBtn"></button>
+        <button class="update-banner-dismiss" id="updateBannerDismiss">✕</button>
       </div>
     </div>
 
