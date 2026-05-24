@@ -39,6 +39,13 @@ body.win32 .settings-input {
   background: var(--input-bg);
   color: var(--text);
 }
+body.win32 select.settings-input {
+  color: var(--text);
+}
+body.win32 select.settings-input option {
+  background: #2c2c2e;
+  color: var(--text);
+}
 body.win32 .settings-divider {
   background: rgba(255,255,255,0.08);
 }
