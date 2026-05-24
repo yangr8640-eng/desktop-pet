@@ -18,7 +18,11 @@
             <span class="dropdown-toggle-text">新对话</span>
             <span class="dropdown-arrow">▾</span>
           </button>
-          <div class="dropdown-list" id="dropdownList" style="display:none;"></div>
+          <div class="dropdown-list" id="dropdownList" style="display:none;">
+            <div class="dropdown-search-container">
+              <input type="text" class="dropdown-search" id="dropdownSearch" placeholder="搜索对话..." autocomplete="off">
+            </div>
+          </div>
         </div>
       </div>
       <div class="header-right">
@@ -132,6 +136,12 @@
     <div class="resize-handle resize-bottom" data-resize="s"></div>
     <div class="resize-handle resize-corner" data-resize="se"></div>
   </div>
+  <script src="chat-core.js"></script>
+  <script src="chat-messages.js"></script>
+  <script src="chat-conversations.js"></script>
+  <script src="chat-stream.js"></script>
+  <script src="chat-settings.js"></script>
+  <script src="chat-updater.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>

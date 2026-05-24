@@ -1,7 +1,7 @@
 const { ipcMain, screen, app, dialog, Notification } = require('electron');
 const path = require('path');
 const { store, generateId, getConversations, saveConversations, getActiveConversation, getConversationList, ensurePresetProviders, getModelProviders, saveModelProviders, getActiveModelProvider } = require('./store');
-const { callAI, callAIStream, validateModelApiKey, generateConversationTitle, buildSystemPrompt } = require('./ai');
+const { callAI, callAIStream, callAIStreamWithRetry, validateModelApiKey, generateConversationTitle, buildSystemPrompt } = require('./ai');
 const { performWebSearch, formatSearchContext, isWeatherQuery, fetchWeatherData } = require('./search');
 const { readFileContent } = require('./file-reader');
 const { getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./windows');
@@ -61,12 +61,17 @@ function registerIpcHandlers() {
     const messages = [buildSystemPrompt(searchContext), ...history, { role: 'user', content: message }];
     const recentHistory = messages.slice(-30);
 
-    callAIStream(recentHistory,
+    // Persist user message BEFORE API call — survives failures
+    conv.messages.push({ role: 'user', content: message });
+    conv.updatedAt = new Date().toISOString();
+    if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
+    saveConversations(convs);
+
+    callAIStreamWithRetry(recentHistory,
       (chunk) => {
         event.sender.send('stream-chunk', { text: chunk, done: false });
       },
       async (fullContent) => {
-        conv.messages.push({ role: 'user', content: message });
         conv.messages.push({ role: 'assistant', content: fullContent });
 
         if (conv.title === '新对话') {
@@ -129,23 +134,28 @@ function registerIpcHandlers() {
       }
     ];
 
-    callAIStream(messages,
+    // Persist file reference before API call
+    const { conv: fileConv, convs: fileConvs } = getActiveConversation();
+    fileConv.messages.push({ role: 'user', content: `📄 拖入文件: ${fileName}` });
+    fileConv.updatedAt = new Date().toISOString();
+    if (fileConv.messages.length > 100) fileConv.messages.splice(0, fileConv.messages.length - 100);
+    saveConversations(fileConvs);
+
+    callAIStreamWithRetry(messages,
       (chunk) => {
         chatWindow.webContents.send('stream-chunk', { text: chunk, done: false });
       },
       async (fullContent) => {
-        const { conv, convs } = getActiveConversation();
-        conv.messages.push({ role: 'user', content: `📄 拖入文件: ${fileName}` });
-        conv.messages.push({ role: 'assistant', content: fullContent });
-        if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
-        if (conv.title === '新对话') {
+        fileConv.messages.push({ role: 'assistant', content: fullContent });
+        if (fileConv.messages.length > 100) fileConv.messages.splice(0, fileConv.messages.length - 100);
+        if (fileConv.title === '新对话') {
           const summary = await generateConversationTitle(
             `用户导入文件: ${fileName}`, fullContent
           );
-          conv.title = summary || `文件分析: ${fileName}`;
+          fileConv.title = summary || `文件分析: ${fileName}`;
         }
-        conv.updatedAt = new Date().toISOString();
-        saveConversations(convs);
+        fileConv.updatedAt = new Date().toISOString();
+        saveConversations(fileConvs);
 
         chatWindow.webContents.send('messages-updated');
         chatWindow.webContents.send('stream-chunk', { text: '', done: true });
@@ -331,7 +341,7 @@ function registerIpcHandlers() {
     const messages = [buildSystemPrompt(searchContext), ...history];
     const recentHistory = messages.slice(-30);
 
-    callAIStream(recentHistory,
+    callAIStreamWithRetry(recentHistory,
       (chunk) => {
         event.sender.send('stream-chunk', { text: chunk, done: false });
       },

@@ -185,4 +185,34 @@ async function callAIStream(messages, onChunk, onDone, onError) {
   }
 }
 
-module.exports = { callAI, callAIStream, validateModelApiKey, generateConversationTitle, buildSystemPrompt };
+// Promise-based wrapper for callAIStream
+function callAIStreamAsync(messages, onChunk) {
+  return new Promise((resolve, reject) => {
+    callAIStream(messages, onChunk, resolve, reject);
+  });
+}
+
+// Streaming with automatic retry (exponential backoff)
+async function callAIStreamWithRetry(messages, onChunk, onDone, onError, maxRetries) {
+  if (maxRetries === undefined) maxRetries = 2;
+  let lastError;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.pow(2, attempt - 1) * 1000;
+      await new Promise(r => setTimeout(r, delay));
+    }
+
+    try {
+      const fullContent = await callAIStreamAsync(messages, onChunk);
+      onDone(fullContent);
+      return;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  onError(`重试${maxRetries}次后仍然失败: ${lastError}`);
+}
+
+module.exports = { callAI, callAIStream, callAIStreamWithRetry, validateModelApiKey, generateConversationTitle, buildSystemPrompt };
