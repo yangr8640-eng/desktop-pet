@@ -65,7 +65,21 @@ npm start
 
 > 💡 **快捷启动**：双击项目目录下的 `start-pet.vbs` 可静默启动桌宠（无CMD窗口），右键该文件 →「发送到桌面快捷方式」即可随时一键启动。
 
-### 便携版（无需 Node.js）
+### 安装版（推荐 Windows 用户）
+
+从 [Releases](https://github.com/yangr8640-eng/desktop-pet/releases) 下载最新的 `DesktopPet-Setup-x.x.x.exe`（x64）或 `DesktopPet-Setup-x.x.x-arm64.exe`（ARM64），运行安装向导即可。
+
+安装完成后桌面会自动创建快捷方式，开始菜单中也会出现「DesktopPet」条目。更新会通过内置的 `electron-updater` 自动推送，无需手动下载新版本。
+
+### 通过 Chocolatey 安装
+
+```bash
+choco install desktoppet
+```
+
+Chocolatey 会自动下载最新版本并静默安装。
+
+### 便携版（无需安装/Node.js）
 
 从 [Releases](https://github.com/yangr8640-eng/desktop-pet/releases) 下载最新的 `DesktopPet-x.x.x-win.zip`，解压后双击 `DesktopPet.exe` 即可运行。
 
@@ -75,13 +89,18 @@ npm start
 npm run build -- --win
 ```
 
-生成 `dist/` 目录，包含 `.zip` 便携版（支持 x64 和 arm64 双架构）。
+生成 `dist/` 目录，包含：
+- `DesktopPet-Setup-x.x.x.exe` — NSIS 安装器（x64）
+- `DesktopPet-Setup-x.x.x-arm64.exe` — NSIS 安装器（ARM64）
+- `DesktopPet-x.x.x-win.zip` — 便携版（x64）
+- `DesktopPet-x.x.x-arm64-win.zip` — 便携版（ARM64）
+- `latest.yml` — 自动更新元数据
 
-> 📦 构建完成后自动生成 `latest.yml`，用于自动更新。
+> 📦 NSIS 目标构建时 electron-builder 自动生成 `latest.yml`，指向 `.exe` 安装器。
 
 ### 发布更新
 
-将 `dist/` 下的 `DesktopPet-x.x.x-win.zip` + `DesktopPet-x.x.x-arm64-win.zip` + `latest.yml` 上传到 [GitHub Release](https://github.com/yangr8640-eng/desktop-pet/releases)。用户打开应用时会自动检测到新版本，在聊天窗口顶部显示更新横幅，一键下载安装。
+将 `dist/` 下的所有 `.exe` 安装器 + `.exe.blockmap` + `.zip` 便携版 + `latest.yml` 上传到 [GitHub Release](https://github.com/yangr8640-eng/desktop-pet/releases)。也可以通过 CI/CD 自动发布：推送 `v*` 标签到 GitHub 后，`.github/workflows/release.yml` 会自动构建并创建 Release。
 
 ### 特性说明
 
@@ -117,9 +136,30 @@ desktop-pet/
 │       ├── warrior/     # ⚔️ 极限战士 — Ultramarines战锤形象
 │       └── claude/      # 💠 Claude — 代码风格AI形象（默认）
 ├── chat/
-│   ├── chat.html        # 聊天侧边栏UI（设置面板/更新横幅/消息区）
-│   ├── chat.css         # 深色半透明主题 + 操作按钮样式
-│   └── chat.js          # 聊天+流式AI+消息操作+自动更新逻辑
+│   ├── chat.html        # 聊天侧边栏UI
+│   ├── chat.css         # 深色半透明主题样式
+│   ├── chat.js          # 初始化入口 + 全局事件 + resize
+│   ├── chat-core.js     # DOM引用 + 共享状态 + 工具函数
+│   ├── chat-messages.js # 消息渲染（Markdown/代码高亮）
+│   ├── chat-conversations.js # 对话下拉菜单 + 搜索过滤
+│   ├── chat-stream.js   # 流式收发 + 重新生成 + 编辑 + 重试
+│   ├── chat-settings.js # 设置面板（模型/主题/个性/导出）
+│   └── chat-updater.js  # 自动更新 banner + 搜索开关
+├── test/
+│   ├── store.test.js    # 数据层单元测试
+│   ├── ai.test.js       # AI调用单元测试
+│   ├── search.test.js   # 搜索模块单元测试
+│   └── file-reader.test.js # 文件读取单元测试
+├── chocolatey/
+│   ├── desktoppet.nuspec        # Chocolatey包元数据
+│   ├── tools/
+│   │   ├── chocolateyInstall.ps1  # 安装脚本
+│   │   └── chocolateyUninstall.ps1 # 卸载脚本
+│   └── legal/
+│       ├── LICENSE.txt          # MIT许可证
+│       └── VERIFICATION.txt     # 校验和说明
+├── .github/workflows/
+│   └── release.yml      # CI/CD：tag push自动构建发布
 ├── assets/              # 应用图标
 ├── generate_icon.py     # 图标生成脚本
 ├── start-pet.bat        # Windows双击启动（CMD）

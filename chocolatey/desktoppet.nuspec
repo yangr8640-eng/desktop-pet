@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>desktoppet</id>
+    <version>1.0.0</version>
+    <title>DesktopPet</title>
+    <authors>yangr8640-eng</authors>
+    <projectUrl>https://github.com/yangr8640-eng/desktop-pet</projectUrl>
+    <licenseUrl>https://github.com/yangr8640-eng/desktop-pet/blob/windows/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description><![CDATA[
+# DesktopPet — AI Desktop Pet for Windows
+
+A cute AI desktop pet that lives on your desktop. Chat with AI, analyze documents, search the web — all from a floating companion.
+
+## Features
+- **Multi-theme** — Orange Cat, Yellow Baby, Ultramarines Warrior, Claude theme
+- **Multi-model AI** — DeepSeek, OpenAI (ChatGPT), and custom model providers
+- **Streaming responses** — Real-time AI replies like ChatGPT
+- **Document analysis** — Import TXT/PDF/DOCX/MD/JSON/CSV files for AI analysis
+- **Web search** — Optional Bing search + automatic weather detection
+- **Conversation management** — Switch/delete conversations, auto-generated titles
+- **Auto-update** — Checks GitHub Releases on startup, one-click download & install
+- **Local storage** — API keys and chat history stored locally, never uploaded
+    ]]></description>
+    <summary>AI desktop pet — chat, analyze documents, search the web from a cute floating companion</summary>
+    <tags>desktop-pet electron ai deepseek openai foss cross-platform</tags>
+    <dependencies>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+    <file src="legal\**" target="legal" />
+  </files>
+</package>

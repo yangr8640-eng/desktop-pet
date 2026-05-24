@@ -52,6 +52,13 @@
     "win": {
       "target": [
         {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
           "target": "zip",
           "arch": [
             "x64",
@@ -61,6 +68,18 @@
       ],
       "icon": "assets/icon.png",
       "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DesktopPet",
+      "installerIcon": "assets/icon.png",
+      "uninstallerIcon": "assets/icon.png",
+      "installerHeaderIcon": "assets/icon.png",
+      "deleteAppDataOnUninstall": false
     },
     "files": [
       "main.js",
