@@ -152,6 +152,8 @@ desktop-pet/
 │   └── chat.js          # 聊天+AI调用逻辑
 ├── assets/              # 应用图标
 ├── generate_icon.py     # 图标生成脚本
+├── start-pet.bat        # Windows双击启动（CMD）
+├── start-pet.vbs        # Windows静默启动（推荐，无窗口）
 ├── launcher.swift       # 可选：Swift启动器
 └── launcher.rb          # 可选：Ruby启动器
 ```
