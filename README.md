@@ -157,7 +157,7 @@ desktop-pet/
 ## 常见问题 / FAQ
 
 **Q: 启动后报错 `ELECTRON_RUN_AS_NODE`？**  
-A: 在终端中执行 `unset ELECTRON_RUN_AS_NODE` 后再运行 `npm start`。
+A: 在终端中执行 `unset ELECTRON_RUN_AS_NODE`（macOS）或 `set ELECTRON_RUN_AS_NODE=`（Windows），然后再运行 `npm start`。或者直接使用 `npx electron .` 启动。
 
 **Q: DeepSeek API Key怎么获取？**  
 A: 访问 [platform.deepseek.com](https://platform.deepseek.com/) 注册账号，在API Keys页面创建Key。费用极低。

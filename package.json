@@ -22,7 +22,7 @@
     "node": ">=18.0.0 <23.0.0"
   },
   "scripts": {
-    "start": "cross-env ELECTRON_RUN_AS_NODE= electron .",
+    "start": "electron .",
     "icon": "python3 generate_icon.py",
     "build": "electron-builder",
     "prebuild": "npm run icon"
