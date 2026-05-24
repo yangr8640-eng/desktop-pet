@@ -39,6 +39,9 @@ contextBridge.exposeInMainWorld('petAPI', {
   setTheme: (themeId) => ipcRenderer.invoke('set-theme', themeId),
   onThemeChanged: (cb) => ipcRenderer.on('theme-changed', (_event, theme) => cb(theme)),
 
+  // Platform
+  getPlatform: () => ipcRenderer.invoke('get-platform'),
+
   // Window controls
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', width, height),
   resizePet: (width, height) => ipcRenderer.send('resize-pet', width, height),

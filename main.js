@@ -4,6 +4,8 @@ const fs = require('fs');
 const Store = require('electron-store');
 const { themes, getTheme } = require('./themes');
 
+const isMac = process.platform === 'darwin';
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
@@ -156,7 +158,7 @@ function createPetWindow() {
     resizable: false,
     hasShadow: false,
     skipTaskbar: true,
-    type: 'panel',
+    ...(isMac && { type: 'panel' }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -165,7 +167,11 @@ function createPetWindow() {
   });
 
   petWindow.loadFile('pet/pet.html');
-  petWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if (isMac) {
+    petWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } else {
+    petWindow.setVisibleOnAllWorkspaces(true);
+  }
   petWindow.on('closed', () => { petWindow = null; });
 }
 
@@ -189,8 +195,15 @@ function createChatWindow() {
     show: false,
     alwaysOnTop: true,
     hasShadow: true,
-    vibrancy: 'sidebar',
-    backgroundColor: '#00000000',
+    ...(isMac
+      ? {
+          vibrancy: 'sidebar',
+          backgroundColor: '#00000000'
+        }
+      : {
+          backgroundColor: '#1a1a1c'
+        }
+    ),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -199,7 +212,11 @@ function createChatWindow() {
   });
 
   chatWindow.loadFile('chat/chat.html');
-  chatWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if (isMac) {
+    chatWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } else {
+    chatWindow.setVisibleOnAllWorkspaces(true);
+  }
 
   chatWindow.on('close', (e) => {
     e.preventDefault();
@@ -400,7 +417,9 @@ async function performWebSearch(query) {
   try {
     const resp = await fetch(`https://cn.bing.com/search?q=${encodeURIComponent(query)}`, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': isMac
+          ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
 
@@ -820,6 +839,10 @@ ipcMain.handle('set-theme', (_event, themeId) => {
   if (petWindow) petWindow.webContents.send('theme-changed', theme);
   if (chatWindow) chatWindow.webContents.send('theme-changed', theme);
   return true;
+});
+
+ipcMain.handle('get-platform', () => {
+  return process.platform;
 });
 
 ipcMain.on('open-chat', () => {

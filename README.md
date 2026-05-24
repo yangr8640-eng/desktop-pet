@@ -1,8 +1,8 @@
 # desktop-pet
 
-> 一只住在你Mac电脑桌面上的AI桌宠，支持 DeepSeek / OpenAI(ChatGPT) / 自定义模型，可以陪你聊天、帮你分析文档、联网搜索信息。
+> 一只住在你电脑桌面上的AI桌宠，支持 DeepSeek / OpenAI(ChatGPT) / 自定义模型，可以陪你聊天、帮你分析文档、联网搜索信息。**兼容 macOS 和 Windows。**
 
-An AI desktop pet for macOS, supporting DeepSeek, OpenAI (ChatGPT), and custom model providers. Chat, analyze documents, and search the web — all from a cute floating companion.
+An AI desktop pet for macOS and Windows, supporting DeepSeek, OpenAI (ChatGPT), and custom model providers. Chat, analyze documents, and search the web — all from a cute floating companion.
 
 ## 功能特性 / Features
 
@@ -13,55 +13,112 @@ An AI desktop pet for macOS, supporting DeepSeek, OpenAI (ChatGPT), and custom m
 - 🌦️ **天气查询** — 自动识别天气类问题，通过wttr.in获取实时天气数据
 - 📝 **多对话管理** — 自定义下拉菜单切换/删除对话，AI自动总结对话标题
 - 🎨 **个性化语气** — 自定义AI说话风格（霸道总裁、说英文、更毒舌...），叠加在主题性格之上
-- 🪟 **液态玻璃UI** — macOS原生vibrancy毛玻璃效果 + backdrop-filter模糊 + 可拖拽调整窗口尺寸
+- 🪟 **液态玻璃UI** — macOS原生vibrancy毛玻璃效果 + backdrop-filter模糊；Windows深色半透明主题 + 可拖拽调整窗口尺寸
 - 🔑 **启动时API Key验证** — 自动检测当前模型Key有效性，失效/未设置时弹出提醒
 - ➕ **自定义模型** — 支持添加任意OpenAI兼容API（如代理、第三方服务），自定义名称/端点/模型标识
 - 🗣️ **主题对话气泡** — 每个形象有专属的悬停打招呼、闲置话语、投喂文案；Claude主题使用cyber代码风格气泡（深色背景+蓝色代码字体）
 - 📋 **消息复制** — 用户和AI消息均可一键复制
 - 💾 **本地存储** — API Key和聊天记录完全本地化（electron-store），不上传任何第三方
-- 🚀 **开机自启** — 支持macOS登录项自动启动
+- 🚀 **开机自启** — 支持 macOS 登录项 / Windows 注册表自动启动
 
 ## 系统要求 / Requirements
 
-- **macOS** 10.13+（使用了NSPanel专用API，仅支持macOS）
-- **Node.js** 18.x 或 20.x LTS（⚠️ 不支持v24，有已知兼容性问题）
-- **Python 3** + Pillow（仅生成图标时需要）
-- **AI API Key** — DeepSeek（[免费注册](https://platform.deepseek.com/)）/ OpenAI（[注册获取](https://platform.openai.com/)）/ 或兼容OpenAI格式的自定义服务
+| | macOS | Windows |
+|---|---|---|
+| **系统版本** | macOS 10.13+ | Windows 10 / 11 |
+| **Node.js** | 18.x 或 20.x LTS | 18.x 或 20.x LTS |
+| **Python** | Python 3 + Pillow（仅生成图标时需要） | 不需要 |
+| **AI API Key** | DeepSeek / OpenAI / 自定义 | DeepSeek / OpenAI / 自定义 |
 
-## 安装 / Installation
+> ⚠️ **Node.js v24 有已知兼容性问题**，建议使用 v18 或 v20 LTS。
+
+---
+
+## macOS 用户 / macOS Users
+
+### 安装与运行
 
 ```bash
-# 1. 克隆仓库
+# 1. 克隆仓库（默认 main 分支）
 git clone https://github.com/yangr8640-eng/desktop-pet.git
 cd desktop-pet
 
 # 2. 安装依赖
 npm install
 
-# 3. 生成应用图标（可选，用于打包）
+# 3. 生成应用图标（可选，仅打包需要）
 python3 generate_icon.py
-```
 
-## 运行 / Usage
-
-```bash
+# 4. 运行
 npm start
 ```
 
-桌宠会出现在屏幕右上角。你可以：
-- **悬停**桌宠看它打招呼
-- **点击**桌宠打开聊天侧边栏
-- **拖拽**桌宠移动位置
-- **拖拽文件**到桌宠身上，它会张嘴"吃掉"并分析文档
-- 聊天窗口设置⚙️中配置API Key、切换桌宠形象、调整联网搜索、自定义语气
+桌宠会出现在屏幕右上角。
 
-## 打包构建 / Build
+### 打包构建
 
 ```bash
 npm run build
 ```
 
-生成的DMG和ZIP文件在 `dist/` 目录。`prebuild` 钩子会自动调用 `npm run icon` 生成图标。
+生成 `dist/` 目录，包含 `.dmg` 和 `.zip` 安装包。
+
+### 特性说明
+
+- macOS 版本使用原生 `vibrancy` API 实现毛玻璃效果，聊天窗口可透过看到桌面背景
+- 桌宠窗口使用 `NSPanel` 类型，点击其他应用时自动隐藏，Alt+Tab 不显示
+- 支持 `-webkit-app-region` 拖拽窗口标题栏
+
+---
+
+## Windows 用户 / Windows Users
+
+### 前置条件
+
+1. 安装 [Node.js](https://nodejs.org/) 18.x 或 20.x LTS（⚠️ 不要安装 v24）
+2. 安装 [Git for Windows](https://git-scm.com/download/win)（或直接在 GitHub 下载 ZIP）
+
+### 安装与运行
+
+```bash
+# 1. 克隆仓库并切换到 windows 分支
+git clone https://github.com/yangr8640-eng/desktop-pet.git
+cd desktop-pet
+git checkout windows
+
+# 2. 安装依赖
+npm install
+
+# 3. 运行
+npm start
+```
+
+桌宠会出现在屏幕右上角。
+
+### 打包构建
+
+```bash
+npm run build -- --win
+```
+
+生成 `dist/` 目录，包含 `.exe` NSIS 安装器和 `win-unpacked` 便携版。
+
+### 特性说明
+
+- Windows 版本使用深色半透明主题（无原生毛玻璃效果，用 CSS `backdrop-filter` 模拟层次感）
+- 桌宠窗口透明区域可正常穿透（点击透过到桌面）
+- 聊天窗口可拖拽调整尺寸（右下角/边缘拖拽手柄）
+- 中文字体使用 Microsoft YaHei（微软雅黑），确保正常渲染
+
+### macOS 与 Windows 版本差异
+
+| 特性 | macOS | Windows |
+|------|-------|---------|
+| 毛玻璃效果 | 原生 vibrancy（实时桌面模糊） | CSS backdrop-filter（深色半透明） |
+| 窗口类型 | NSPanel（浮动面板） | 普通无边框窗口 + alwaysOnTop |
+| 设置面板 | 浅色半透明主题 | 深色主题 |
+| 文件拖放 | webUtils.getPathForFile | webUtils.getPathForFile |
+| 打包格式 | .dmg / .zip | .exe (NSIS) / 便携版 |
 
 ## 项目结构 / Project Structure
 
@@ -117,8 +174,11 @@ A: 打开聊天侧边栏，点击右上角🌐按钮切换。搜索通过抓取B
 **Q: 怎么切换桌宠形象？**  
 A: 打开聊天侧边栏 → 点击⚙️设置 → "宠物外观"下拉菜单切换。切换后桌宠形象、名称、性格语气、UI配色全部即时变化，重启保持。
 
-**Q: 支持Windows/Linux吗？**  
-A: 目前不支持。桌宠使用了macOS专属的NSPanel窗口类型（`type: 'panel'`），实现透明无边框、全工作区显示等效果需要macOS API。
+**Q: 支持Windows吗？**  
+A: 支持！Clone 仓库后切换到 `windows` 分支：`git checkout windows`，然后 `npm install && npm start`。详见上方「Windows 用户」章节。Windows 版本使用深色半透明主题替代 macOS 原生毛玻璃效果，功能与 macOS 版本一致。
+
+**Q: 支持Linux吗？**  
+A: 暂未适配。欢迎社区贡献 Linux 分支。
 
 ## 技术栈 / Tech Stack
 

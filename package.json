@@ -1,7 +1,7 @@
 {
   "name": "desktop-pet",
   "version": "1.0.0",
-  "description": "AI desktop pet - A cream-yellow kitten companion for macOS",
+  "description": "AI desktop pet - A cute kitten companion for macOS and Windows",
   "main": "main.js",
   "author": "yangr8640-eng",
   "license": "MIT",
@@ -15,13 +15,14 @@
     "ai",
     "deepseek",
     "macos",
+    "windows",
     "cat"
   ],
   "engines": {
     "node": ">=18.0.0 <23.0.0"
   },
   "scripts": {
-    "start": "unset ELECTRON_RUN_AS_NODE && electron .",
+    "start": "cross-env ELECTRON_RUN_AS_NODE= electron .",
     "icon": "python3 generate_icon.py",
     "build": "electron-builder",
     "prebuild": "npm run icon"
@@ -33,6 +34,15 @@
       "target": ["dmg", "zip"],
       "icon": "assets/icon.png",
       "category": "public.app-category.entertainment"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.png"
     },
     "files": [
       "main.js",
@@ -50,6 +60,7 @@
     "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^33.4.0",
     "electron-builder": "^25.1.8"
   }

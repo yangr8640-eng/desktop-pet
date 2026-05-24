@@ -134,6 +134,12 @@ async function init() {
   // Search toggle
   await initSearchToggle();
 
+  // Apply Windows platform class for CSS overrides
+  const platform = await window.petAPI.getPlatform();
+  if (platform === 'win32') {
+    document.body.classList.add('win32');
+  }
+
   // Listen for external message updates (e.g., file drop analysis)
   window.petAPI.onMessagesUpdated(async () => {
     await loadConversationMessages();
