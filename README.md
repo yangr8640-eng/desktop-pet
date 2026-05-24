@@ -119,8 +119,8 @@ A: 打开聊天侧边栏，点击右上角🌐按钮切换。搜索通过抓取B
 **Q: 怎么切换桌宠形象？**  
 A: 打开聊天侧边栏 → 点击⚙️设置 → "宠物外观"下拉菜单切换。切换后桌宠形象、名称、性格语气、UI配色全部即时变化，重启保持。
 
-**Q: 支持Windows/Linux吗？**  
-A: 目前不支持。桌宠使用了macOS专属的NSPanel窗口类型（`type: 'panel'`），实现透明无边框、全工作区显示等效果需要macOS API。
+**Q: 支持Windows吗？**  
+A: 支持！请切换到 [`windows` 分支](https://github.com/yangr8640-eng/desktop-pet/tree/windows)，该分支使用跨平台窗口实现，功能与 macOS 版一致。
 
 ## 技术栈 / Tech Stack
 
