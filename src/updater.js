@@ -1,10 +1,19 @@
-const { autoUpdater } = require('electron-updater');
 const { getChatWindow } = require('./windows');
 
-autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = true;
+let _autoUpdater = null;
+function getAutoUpdater() {
+  if (!_autoUpdater) {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+    _autoUpdater = autoUpdater;
+  }
+  return _autoUpdater;
+}
 
 function setupAutoUpdater() {
+  const autoUpdater = getAutoUpdater();
+
   autoUpdater.on('checking-for-update', () => {
     sendToChat('update-checking');
   });
@@ -47,13 +56,13 @@ function sendToChat(channel, data = {}) {
 }
 
 function downloadUpdate() {
-  autoUpdater.downloadUpdate().catch((err) => {
+  getAutoUpdater().downloadUpdate().catch((err) => {
     sendToChat('update-error', { message: err.message });
   });
 }
 
 function quitAndInstall() {
-  autoUpdater.quitAndInstall();
+  getAutoUpdater().quitAndInstall();
 }
 
 module.exports = { setupAutoUpdater, downloadUpdate, quitAndInstall };
