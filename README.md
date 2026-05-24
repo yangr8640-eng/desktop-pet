@@ -6,7 +6,7 @@ An AI desktop pet for macOS, powered by DeepSeek AI. Chat, analyze documents, an
 
 ## 功能特性 / Features
 
-- 🐱 **多形象切换** — 小橘（原创橘猫SVG）、小奶娃、极限战士（战锤40K Ultramarines），独立名称/性格/UI配色/欢迎词/气泡消息
+- 🐱 **多形象切换** — 小橘（原创橘猫SVG）、小奶娃、极限战士（战锤40K Ultramarines）、Claude（💠 代码风格形象），独立名称/性格/UI配色/欢迎词/气泡消息
 - 💬 **AI聊天** — 基于DeepSeek API的智能对话，每个形象有专属性格语气（用户可叠加自定义）
 - 📄 **文档分析** — 拖拽到桌宠嘴巴或点击📎导入TXT/PDF/DOCX/MD/JSON/CSV文件，AI自动分析总结
 - 🌐 **联网搜索** — 可选开启（设置面板中切换），Bing搜索 + wttr.in天气自动检测
@@ -15,7 +15,7 @@ An AI desktop pet for macOS, powered by DeepSeek AI. Chat, analyze documents, an
 - 🎨 **个性化语气** — 自定义AI说话风格（霸道总裁、说英文、更毒舌...），叠加在主题性格之上
 - 🪟 **液态玻璃UI** — macOS原生vibrancy毛玻璃效果 + backdrop-filter模糊 + 可拖拽调整窗口尺寸
 - 🔑 **启动时API Key验证** — 自动检测Key有效性，失效/未设置时弹出提醒
-- 🗣️ **主题对话气泡** — 每个形象有专属的悬停打招呼、闲置话语、投喂文案（如极限战士："向您致敬，战士。⚔️"）
+- 🗣️ **主题对话气泡** — 每个形象有专属的悬停打招呼、闲置话语、投喂文案；Claude主题使用cyber代码风格气泡（深色背景+蓝色代码字体）
 - 📋 **消息复制** — 用户和AI消息均可一键复制
 - 💾 **本地存储** — API Key和聊天记录完全本地化（electron-store），不上传任何第三方
 - 🚀 **开机自启** — 支持macOS登录项自动启动
@@ -80,7 +80,10 @@ desktop-pet/
 │       ├── yellow/      # 💛 小奶娃 — 原始角色SVG
 │       │   ├── normal.svg
 │       │   └── mouthopen.svg
-│       └── warrior/     # ⚔️ 极限战士 — Ultramarines战锤形象
+│       ├── warrior/     # ⚔️ 极限战士 — Ultramarines战锤形象
+│       │   ├── normal.svg
+│       │   └── mouthopen.svg
+│       └── claude/       # 💠 Claude — 代码风格AI形象（默认）
 │           ├── normal.svg
 │           └── mouthopen.svg
 ├── chat/
