@@ -11,6 +11,7 @@ let chatWidth = 420;
 let chatHeight = 400;
 let savedChatBounds = null;
 let ignoreBlurUntil = 0;
+let animTimer = null;
 
 function getPetWindow() { return petWindow; }
 function getChatWindow() { return chatWindow; }
@@ -110,6 +111,9 @@ function showChatWindow() {
   if (isChatVisible) return;
   isChatVisible = true;
 
+  // Cancel any in-progress hide animation
+  if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+
   if (savedChatBounds) {
     chatWidth = savedChatBounds.width;
     chatHeight = savedChatBounds.height;
@@ -159,7 +163,7 @@ function showChatWindow() {
       height: chatHeight
     });
     if (progress < 1) {
-      setTimeout(step, 10);
+      animTimer = setTimeout(step, 10);
     }
   };
   step();
@@ -168,6 +172,9 @@ function showChatWindow() {
 function hideChatWindow() {
   if (!isChatVisible) return;
   isChatVisible = false;
+
+  // Cancel any in-progress show animation
+  if (animTimer) { clearTimeout(animTimer); animTimer = null; }
 
   savedChatBounds = chatWindow.getBounds();
   chatWidth = savedChatBounds.width;
@@ -198,7 +205,7 @@ function hideChatWindow() {
       height: chatHeight
     });
     if (progress < 1) {
-      setTimeout(step, 10);
+      animTimer = setTimeout(step, 10);
     } else {
       chatWindow.hide();
     }
