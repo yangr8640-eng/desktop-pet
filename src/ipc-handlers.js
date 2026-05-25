@@ -439,6 +439,16 @@ function registerIpcHandlers() {
     return store.get('searchEnabled');
   });
 
+  /* ─── Auto-launch ─── */
+  ipcMain.handle('get-auto-launch', () => {
+    return store.get('autoLaunch', true);
+  });
+
+  ipcMain.handle('set-auto-launch', (_event, enabled) => {
+    store.set('autoLaunch', enabled);
+    app.setLoginItemSettings({ openAtLogin: enabled });
+  });
+
   /* ─── Personality ─── */
   ipcMain.handle('save-personality', (_event, text) => {
     store.set('personalityPrompt', text.trim());

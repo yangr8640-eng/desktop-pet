@@ -214,5 +214,16 @@ window.Chat = window.Chat || {};
       const theme = await window.petAPI.getTheme();
       C.applyTheme(theme);
     });
+
+    // Auto-launch toggle
+    const autoLaunchToggle = C.elements.autoLaunchToggle;
+    if (autoLaunchToggle) {
+      window.petAPI.getAutoLaunch().then(enabled => {
+        autoLaunchToggle.checked = enabled;
+      });
+      autoLaunchToggle.addEventListener('change', async () => {
+        await window.petAPI.setAutoLaunch(autoLaunchToggle.checked);
+      });
+    }
   };
 })();

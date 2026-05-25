@@ -42,6 +42,10 @@ contextBridge.exposeInMainWorld('petAPI', {
   toggleSearch: () => ipcRenderer.invoke('toggle-search'),
   getSearchEnabled: () => ipcRenderer.invoke('get-search-enabled'),
 
+  // Auto-launch toggle
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
+
   // Personality
   savePersonality: (text) => ipcRenderer.invoke('save-personality', text),
   getPersonality: () => ipcRenderer.invoke('get-personality'),

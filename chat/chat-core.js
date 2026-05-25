@@ -10,6 +10,7 @@ window.Chat = window.Chat || {};
     chatInput: document.getElementById('chatInput'),
     sendBtn: document.getElementById('sendBtn'),
     searchToggle: document.getElementById('searchToggle'),
+    autoLaunchToggle: document.getElementById('autoLaunchToggle'),
     searchHeaderBtn: document.getElementById('searchHeaderBtn'),
     settingsBtn: document.getElementById('settingsBtn'),
     settingsPanel: document.getElementById('settingsPanel'),

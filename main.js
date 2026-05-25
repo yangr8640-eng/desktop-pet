@@ -85,7 +85,7 @@ app.whenReady().then(() => {
   setupAutoUpdater();
 
   app.setLoginItemSettings({
-    openAtLogin: true,
+    openAtLogin: store.get('autoLaunch', true),
     path: app.getPath('exe')
   });
 });
