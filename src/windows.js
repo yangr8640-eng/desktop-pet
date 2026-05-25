@@ -116,11 +116,32 @@ function showChatWindow() {
   }
 
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatY = Math.round((screenHeight - chatHeight) / 2);
-  const startX = screenWidth;
-  const endX = screenWidth - chatWidth;
 
-  chatWindow.setBounds({ x: startX, y: chatY, width: chatWidth, height: chatHeight });
+  // Position near pet window
+  const pw = getPetWindow();
+  let targetX, targetY, startX;
+  const gap = 12;
+
+  if (pw) {
+    const pb = pw.getBounds();
+    // Place to right of pet, or left if not enough room, or fallback to screen right
+    if (pb.x + pb.width + gap + chatWidth <= screenWidth) {
+      targetX = pb.x + pb.width + gap;
+    } else if (pb.x - gap - chatWidth >= 0) {
+      targetX = pb.x - gap - chatWidth;
+    } else {
+      targetX = screenWidth - chatWidth;
+    }
+    targetY = Math.round(pb.y + (pb.height - chatHeight) / 2);
+    targetY = Math.max(0, Math.min(targetY, screenHeight - chatHeight));
+    startX = pb.x + Math.round(pb.width / 2);
+  } else {
+    targetX = screenWidth - chatWidth;
+    targetY = Math.round((screenHeight - chatHeight) / 2);
+    startX = screenWidth;
+  }
+
+  chatWindow.setBounds({ x: startX, y: targetY, width: chatWidth, height: chatHeight });
   chatWindow.show();
   chatWindow.focus();
   ignoreBlurUntil = Date.now() + 400;
@@ -132,8 +153,8 @@ function showChatWindow() {
     const progress = Math.min(elapsed / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     chatWindow.setBounds({
-      x: Math.round(startX + (endX - startX) * eased),
-      y: chatY,
+      x: Math.round(startX + (targetX - startX) * eased),
+      y: targetY,
       width: chatWidth,
       height: chatHeight
     });
@@ -152,10 +173,17 @@ function hideChatWindow() {
   chatWidth = savedChatBounds.width;
   chatHeight = savedChatBounds.height;
 
-  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  const chatY = Math.round((screenHeight - chatHeight) / 2);
-  const startX = screenWidth - chatWidth;
-  const endX = screenWidth;
+  // Animate toward pet position, or off-screen right if no pet
+  const pw = getPetWindow();
+  let endX;
+  if (pw) {
+    endX = pw.getBounds().x + Math.round(pw.getBounds().width / 2);
+  } else {
+    endX = screen.getPrimaryDisplay().workAreaSize.width;
+  }
+
+  const startX = savedChatBounds.x;
+  const chatY = savedChatBounds.y;
 
   const duration = 200;
   const startTime = Date.now();
