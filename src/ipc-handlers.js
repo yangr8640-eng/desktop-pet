@@ -555,7 +555,7 @@ function registerIpcHandlers() {
       store.set('petPosition', { x: pos[0], y: pos[1] });
     }
     destroyTray();
-    app.quit();
+    app.exit(0);
   });
 }
 
