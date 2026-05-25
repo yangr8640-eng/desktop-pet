@@ -4,6 +4,7 @@ const { store, runMigrations } = require('./src/store');
 const { createPetWindow, createChatWindow, getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./src/windows');
 const { registerIpcHandlers } = require('./src/ipc-handlers');
 const { setupAutoUpdater } = require('./src/updater');
+const { getTray, setTray, destroyTray } = require('./src/tray');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -12,12 +13,11 @@ if (!app.requestSingleInstanceLock()) {
 
 registerIpcHandlers();
 
-let tray = null;
-
 function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  tray = new Tray(icon);
+  const tray = new Tray(icon);
+  setTray(tray);
   tray.setToolTip('桌面宠物');
 
   const contextMenu = Menu.buildFromTemplate([
@@ -34,6 +34,7 @@ function createTray() {
           const pos = petWindow.getPosition();
           store.set('petPosition', { x: pos[0], y: pos[1] });
         }
+        destroyTray();
         app.quit();
       }
     }
@@ -52,6 +53,7 @@ function createTray() {
 }
 
 function updateTrayIcon(theme) {
+  const tray = getTray();
   if (!tray) return;
   try {
     const svgPath = path.join(__dirname, 'pet', theme.svgs.normal);
@@ -108,4 +110,5 @@ app.on('before-quit', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  destroyTray();
 });

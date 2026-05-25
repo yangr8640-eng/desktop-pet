@@ -6,6 +6,7 @@ const { performWebSearch, formatSearchContext, isWeatherQuery, fetchWeatherData 
 const { readFileContent } = require('./file-reader');
 const { getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./windows');
 const { getTheme } = require('../themes');
+const { destroyTray } = require('./tray');
 
 function registerIpcHandlers() {
 
@@ -553,6 +554,7 @@ function registerIpcHandlers() {
       const pos = petWindow.getPosition();
       store.set('petPosition', { x: pos[0], y: pos[1] });
     }
+    destroyTray();
     app.quit();
   });
 }
