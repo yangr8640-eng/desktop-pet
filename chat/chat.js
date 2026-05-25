@@ -144,6 +144,7 @@ window.Chat = window.Chat || {};
   C.initConversationDropdown();
   C.initInputHandlers();
   C.initSettingsHandlers();
+  C.initGlobalSearch();
   initResizeHandlers();
 
   // Bootstrap

@@ -119,6 +119,12 @@
       </div>
     </div>
 
+    <!-- Global search overlay -->
+    <div class="global-search-overlay" id="globalSearchOverlay">
+      <input type="text" class="global-search-input" id="globalSearchInput" placeholder="搜索所有对话内容... (Ctrl+F)" autocomplete="off">
+      <div class="global-search-results" id="globalSearchResults"></div>
+    </div>
+
     <!-- Messages -->
     <div class="messages-area" id="messagesArea">
       <div class="welcome-msg">
@@ -145,9 +151,11 @@
     <div class="resize-handle resize-bottom" data-resize="s"></div>
     <div class="resize-handle resize-corner" data-resize="se"></div>
   </div>
+  <script src="../node_modules/marked/marked.min.js"></script>
   <script src="chat-core.js"></script>
   <script src="chat-messages.js"></script>
   <script src="chat-conversations.js"></script>
+  <script src="chat-search.js"></script>
   <script src="chat-stream.js"></script>
   <script src="chat-settings.js"></script>
   <script src="chat-updater.js"></script>

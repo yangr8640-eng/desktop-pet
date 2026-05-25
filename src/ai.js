@@ -1,33 +1,56 @@
 const { store, getActiveModelProvider, getModelProviders } = require('./store');
 const { getTheme } = require('../themes');
 
+let activeStreamController = null;
+
+function cancelActiveStream() {
+  if (activeStreamController) {
+    activeStreamController.abort();
+    activeStreamController = null;
+  }
+}
+
 async function callAI(messages) {
   const provider = getActiveModelProvider();
   if (!provider.apiKey) {
     return `你还没设置${provider.name}的API Key哦！请在聊天窗口的设置里输入API Key~`;
   }
 
-  const resp = await fetch(provider.apiBaseUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${provider.apiKey}`
-    },
-    body: JSON.stringify({
-      model: provider.modelName,
-      messages,
-      temperature: 0.8,
-      max_tokens: 2000
-    })
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`API错误(${resp.status}): ${errText}`);
+  try {
+    const resp = await fetch(provider.apiBaseUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${provider.apiKey}`
+      },
+      body: JSON.stringify({
+        model: provider.modelName,
+        messages,
+        temperature: 0.8,
+        max_tokens: 2000
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`API错误(${resp.status}): ${errText}`);
+    }
+
+    const data = await resp.json();
+    return data.choices[0].message.content;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') {
+      return '请求超时，请稍后重试';
+    }
+    throw err;
   }
-
-  const data = await resp.json();
-  return data.choices[0].message.content;
 }
 
 async function validateModelApiKey(providerId) {
@@ -114,6 +137,12 @@ async function callAIStream(messages, onChunk, onDone, onError) {
     return;
   }
 
+  cancelActiveStream();
+  activeStreamController = new AbortController();
+  const controller = activeStreamController;
+  let aborted = false;
+  controller.signal.addEventListener('abort', () => { aborted = true; });
+
   let resp;
   try {
     resp = await fetch(provider.apiBaseUrl, {
@@ -128,10 +157,16 @@ async function callAIStream(messages, onChunk, onDone, onError) {
         temperature: 0.8,
         max_tokens: 2000,
         stream: true
-      })
+      }),
+      signal: controller.signal
     });
   } catch (err) {
+    if (err.name === 'AbortError') {
+      if (activeStreamController === controller) activeStreamController = null;
+      return;
+    }
     onError(`网络错误: ${err.message}`);
+    if (activeStreamController === controller) activeStreamController = null;
     return;
   }
 
@@ -142,6 +177,7 @@ async function callAIStream(messages, onChunk, onDone, onError) {
     } catch {
       onError(`API错误(${resp.status})`);
     }
+    if (activeStreamController === controller) activeStreamController = null;
     return;
   }
 
@@ -160,6 +196,10 @@ async function callAIStream(messages, onChunk, onDone, onError) {
       buffer = lines.pop();
 
       for (const line of lines) {
+        if (aborted) {
+          if (activeStreamController === controller) activeStreamController = null;
+          return;
+        }
         const trimmed = line.trim();
         if (!trimmed.startsWith('data: ')) continue;
         const data = trimmed.slice(6);
@@ -181,8 +221,14 @@ async function callAIStream(messages, onChunk, onDone, onError) {
       onError('AI没有返回任何内容');
     }
   } catch (err) {
+    if (err.name === 'AbortError' || aborted) {
+      if (activeStreamController === controller) activeStreamController = null;
+      return;
+    }
     onError(`读取响应时出错: ${err.message}`);
   }
+
+  if (activeStreamController === controller) activeStreamController = null;
 }
 
 // Promise-based wrapper for callAIStream
@@ -198,6 +244,9 @@ async function callAIStreamWithRetry(messages, onChunk, onDone, onError, maxRetr
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Don't retry if the stream was manually cancelled
+    if (activeStreamController && activeStreamController.signal.aborted) return;
+
     if (attempt > 0) {
       const delay = Math.pow(2, attempt - 1) * 1000;
       await new Promise(r => setTimeout(r, delay));
@@ -209,10 +258,11 @@ async function callAIStreamWithRetry(messages, onChunk, onDone, onError, maxRetr
       return;
     } catch (err) {
       lastError = err;
+      if (activeStreamController && activeStreamController.signal.aborted) return;
     }
   }
 
   onError(`重试${maxRetries}次后仍然失败: ${lastError}`);
 }
 
-module.exports = { callAI, callAIStream, callAIStreamWithRetry, validateModelApiKey, generateConversationTitle, buildSystemPrompt };
+module.exports = { callAI, callAIStream, callAIStreamWithRetry, cancelActiveStream, validateModelApiKey, generateConversationTitle, buildSystemPrompt };

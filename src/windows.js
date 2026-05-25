@@ -1,6 +1,7 @@
 const { BrowserWindow, screen } = require('electron');
 const path = require('path');
 const { store } = require('./store');
+const { cancelActiveStream } = require('./ai');
 
 const isMac = process.platform === 'darwin';
 
@@ -172,6 +173,7 @@ function showChatWindow() {
 function hideChatWindow() {
   if (!isChatVisible) return;
   isChatVisible = false;
+  cancelActiveStream();
 
   // Cancel any in-progress show animation
   if (animTimer) { clearTimeout(animTimer); animTimer = null; }

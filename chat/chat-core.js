@@ -42,7 +42,10 @@ window.Chat = window.Chat || {};
     updateBanner: document.getElementById('updateBanner'),
     updateBannerText: document.getElementById('updateBannerText'),
     updateBannerBtn: document.getElementById('updateBannerBtn'),
-    updateBannerDismiss: document.getElementById('updateBannerDismiss')
+    updateBannerDismiss: document.getElementById('updateBannerDismiss'),
+    globalSearchOverlay: document.getElementById('globalSearchOverlay'),
+    globalSearchInput: document.getElementById('globalSearchInput'),
+    globalSearchResults: document.getElementById('globalSearchResults')
   };
 
   // ─── Shared State ───

@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('petAPI', {
   // Message operations
   regenerateMessage: () => ipcRenderer.send('regenerate-message'),
   trimConversation: (messageIndex) => ipcRenderer.invoke('trim-conversation', messageIndex),
+  cancelRequest: () => ipcRenderer.send('cancel-request'),
+
+  // Cross-conversation search
+  searchAllConversations: (query) => ipcRenderer.invoke('search-all-conversations', query),
 
   // Model Providers
   getModelProviders: () => ipcRenderer.invoke('get-model-providers'),

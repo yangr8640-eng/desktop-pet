@@ -236,7 +236,7 @@ window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
   applyPetTheme(theme);
 })();
 
-setInterval(() => {
+const idleInterval = setInterval(() => {
   if (!isHovering && !wrapper.classList.contains('dragover') && !bubble.classList.contains('show')) {
     const msgs = currentMessages.idle;
     const msg = msgs[Math.floor(Math.random() * msgs.length)];
@@ -246,3 +246,7 @@ setInterval(() => {
     }, 2500);
   }
 }, 30000); // Every 30 seconds
+
+window.addEventListener('beforeunload', () => {
+  clearInterval(idleInterval);
+});

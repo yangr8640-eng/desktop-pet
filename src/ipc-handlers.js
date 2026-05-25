@@ -1,7 +1,7 @@
 const { ipcMain, screen, app, dialog, Notification } = require('electron');
 const path = require('path');
 const { store, generateId, getConversations, saveConversations, getActiveConversation, getConversationList, ensurePresetProviders, getModelProviders, saveModelProviders, getActiveModelProvider } = require('./store');
-const { callAI, callAIStream, callAIStreamWithRetry, validateModelApiKey, generateConversationTitle, buildSystemPrompt } = require('./ai');
+const { callAI, callAIStream, callAIStreamWithRetry, cancelActiveStream, validateModelApiKey, generateConversationTitle, buildSystemPrompt } = require('./ai');
 const { performWebSearch, formatSearchContext, isWeatherQuery, fetchWeatherData } = require('./search');
 const { readFileContent } = require('./file-reader');
 const { getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./windows');
@@ -546,6 +546,40 @@ function registerIpcHandlers() {
 
   ipcMain.on('minimize-chat', () => {
     hideChatWindow();
+  });
+
+  /* ─── Cancel active request ─── */
+  ipcMain.on('cancel-request', () => {
+    cancelActiveStream();
+  });
+
+  /* ─── Cross-conversation search ─── */
+  ipcMain.handle('search-all-conversations', (_event, query) => {
+    if (!query || query.trim().length === 0) return [];
+    const q = query.trim().toLowerCase();
+    const convs = getConversations();
+    const results = [];
+
+    for (const conv of convs) {
+      if (!conv.messages || conv.messages.length === 0) continue;
+      for (let i = 0; i < conv.messages.length; i++) {
+        const msg = conv.messages[i];
+        if (msg.content && msg.content.toLowerCase().includes(q)) {
+          results.push({
+            conversationId: conv.id,
+            conversationTitle: conv.title || '新对话',
+            messageIndex: i,
+            role: msg.role,
+            preview: msg.content.slice(0, 120) + (msg.content.length > 120 ? '...' : ''),
+            timestamp: conv.updatedAt
+          });
+          if (results.length >= 30) break; // limit per conversation
+        }
+      }
+      if (results.length >= 50) break; // total limit
+    }
+
+    return results;
   });
 
   ipcMain.on('quit-app', () => {

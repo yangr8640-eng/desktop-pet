@@ -4,19 +4,16 @@ window.Chat = window.Chat || {};
 (function() {
   const C = window.Chat;
 
-  C.startStreamingRequest = function(userText, showUserMessage) {
-    if (showUserMessage === undefined) showUserMessage = true;
-
-    if (showUserMessage) {
-      C.addMessage('user', userText);
-    }
+  // Shared stream response handler
+  C._handleStreamResponse = function(assistantDiv) {
     const typingDots = C.elements.typingDots;
+    let fullContent = '';
     typingDots.classList.add('show');
 
-    const assistantDiv = C.createAssistantMessageSkeleton();
-    let fullContent = '';
-
-    if (C.state.streamCleanup) C.state.streamCleanup();
+    if (C.state.streamCleanup) {
+      window.petAPI.cancelRequest();
+      C.state.streamCleanup();
+    }
 
     C.state.streamCleanup = window.petAPI.onStreamChunk((data) => {
       if (data.done) {
@@ -49,6 +46,17 @@ window.Chat = window.Chat || {};
     });
   };
 
+  C.startStreamingRequest = function(userText, showUserMessage) {
+    if (showUserMessage === undefined) showUserMessage = true;
+
+    if (showUserMessage) {
+      C.addMessage('user', userText);
+    }
+
+    const assistantDiv = C.createAssistantMessageSkeleton();
+    C._handleStreamResponse(assistantDiv);
+  };
+
   C.regenerateLastMessage = async function() {
     if (C.state.isLoading) return;
 
@@ -60,43 +68,9 @@ window.Chat = window.Chat || {};
 
     C.state.isLoading = true;
     C.elements.sendBtn.disabled = true;
-    const typingDots = C.elements.typingDots;
-    typingDots.classList.add('show');
 
     const assistantDiv = C.createAssistantMessageSkeleton();
-    let fullContent = '';
-
-    if (C.state.streamCleanup) C.state.streamCleanup();
-
-    C.state.streamCleanup = window.petAPI.onStreamChunk((data) => {
-      if (data.done) {
-        typingDots.classList.remove('show');
-        if (!data.error) {
-          C.renderMarkdownInPlace(assistantDiv, fullContent);
-        }
-        C.elements.sendBtn.disabled = false;
-        C.state.isLoading = false;
-        C.elements.chatInput.focus();
-        C.refreshConversationSelect();
-        if (C.state.streamCleanup) { C.state.streamCleanup(); C.state.streamCleanup = null; }
-      } else if (data.error) {
-        typingDots.classList.remove('show');
-        assistantDiv.innerHTML = `<p>哎呀，出错了: ${data.text}</p>
-          <button class="retry-btn">🔄 重试</button>`;
-        assistantDiv.querySelector('.retry-btn').addEventListener('click', () => {
-          assistantDiv.remove();
-          C.regenerateLastMessage();
-        });
-        C.elements.sendBtn.disabled = false;
-        C.state.isLoading = false;
-        if (C.state.streamCleanup) { C.state.streamCleanup(); C.state.streamCleanup = null; }
-      } else {
-        typingDots.classList.remove('show');
-        fullContent += data.text;
-        assistantDiv.textContent = fullContent;
-        C.elements.messagesArea.scrollTop = C.elements.messagesArea.scrollHeight;
-      }
-    });
+    C._handleStreamResponse(assistantDiv);
 
     window.petAPI.regenerateMessage();
   };
