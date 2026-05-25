@@ -2,11 +2,11 @@
 
 :root {
   --bg: transparent;
-  --input-bg: rgba(120, 120, 128, 0.08);
-  --surface: rgba(60, 60, 67, 0.18);
-  --surface2: rgba(100, 100, 110, 0.15);
-  --text: #f5f5f7;
-  --text2: rgba(245, 245, 247, 0.65);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --surface: rgba(0, 0, 0, 0.06);
+  --surface2: rgba(0, 0, 0, 0.08);
+  --text: #1d1d1f;
+  --text2: rgba(0, 0, 0, 0.55);
   --accent: #FFB347;
   --accent-dark: #E8782A;
   --accent-rgb: 255, 179, 71;
@@ -24,10 +24,21 @@ body {
 /* Windows dark theme overrides */
 body.win32 {
   background: #1a1a1c;
+  --text: #f5f5f7;
+  --text2: rgba(245, 245, 247, 0.65);
+  --input-bg: rgba(120, 120, 128, 0.08);
+  --surface: rgba(60, 60, 67, 0.18);
+  --surface2: rgba(100, 100, 110, 0.15);
 }
 body.win32 .chat-header,
 body.win32 .input-area {
   background: rgba(26, 26, 28, 0.75);
+}
+body.win32 .chat-header {
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+body.win32 .input-area {
+  border-top-color: rgba(255,255,255,0.06);
 }
 body.win32 .settings-panel {
   background: rgba(30, 30, 34, 0.85);
@@ -64,6 +75,39 @@ body.win32 .settings-info {
   color: var(--text2);
 }
 
+/* Windows: dropdown dark backgrounds */
+body.win32 .dropdown-list {
+  background: #2c2c2e;
+  border-color: rgba(255,255,255,0.1);
+}
+body.win32 .dropdown-search-container {
+  background: #2c2c2e;
+  border-bottom-color: rgba(255,255,255,0.08);
+}
+body.win32 .dropdown-search {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+}
+body.win32 .dropdown-search:focus {
+  background: rgba(255,255,255,0.1);
+}
+body.win32 .dropdown-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+/* Windows: message action buttons hover */
+body.win32 .message.assistant .copy-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+body.win32 .message.assistant .regen-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Windows: update banner dismiss */
+body.win32 .update-banner-dismiss:hover {
+  background: rgba(255,255,255,0.1);
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -81,7 +125,7 @@ body.win32 .settings-info {
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   -webkit-app-region: drag;
-  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  border-bottom: 0.5px solid rgba(0,0,0,0.06);
   position: relative;
   z-index: 10;
 }
@@ -133,8 +177,8 @@ body.win32 .settings-info {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #2c2c2e;
-  border: 0.5px solid rgba(255,255,255,0.1);
+  background: #ffffff;
+  border: 0.5px solid rgba(0,0,0,0.08);
   border-radius: 8px;
   overflow: hidden;
   z-index: 9999;
@@ -144,18 +188,18 @@ body.win32 .settings-info {
 /* Dropdown search */
 .dropdown-search-container {
   padding: 6px 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
   position: sticky;
   top: 0;
-  background: #2c2c2e;
+  background: #ffffff;
   z-index: 1;
 }
 .dropdown-search {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0,0,0,0.1);
   border-radius: 6px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.04);
   color: var(--text);
   font-size: 13px;
   outline: none;
@@ -163,7 +207,7 @@ body.win32 .settings-info {
 }
 .dropdown-search:focus {
   border-color: var(--accent);
-  background: rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.06);
 }
 .dropdown-search::placeholder {
   color: var(--text2);
@@ -178,7 +222,7 @@ body.win32 .settings-info {
   cursor: pointer;
   transition: background 0.1s;
 }
-.dropdown-item:hover { background: rgba(255,255,255,0.08); }
+.dropdown-item:hover { background: rgba(0,0,0,0.06); }
 .dropdown-item.active { background: rgba(var(--accent-rgb), 0.18); }
 .dropdown-item-title {
   flex: 1;
@@ -426,7 +470,7 @@ body.win32 .settings-info {
   transition: all 0.12s;
 }
 .update-banner-dismiss:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.08);
   color: var(--text);
 }
 
@@ -588,7 +632,7 @@ body.win32 .settings-info {
   justify-content: center;
 }
 .message.assistant:hover .copy-btn { opacity: 0.6; }
-.message.assistant .copy-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+.message.assistant .copy-btn:hover { opacity: 1; background: rgba(0,0,0,0.08); }
 .message.assistant .copy-btn.copied {
   opacity: 1;
   color: var(--accent);
@@ -612,7 +656,7 @@ body.win32 .settings-info {
   justify-content: center;
 }
 .message.assistant:hover .regen-btn { opacity: 0.6; }
-.message.assistant .regen-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+.message.assistant .regen-btn:hover { opacity: 1; background: rgba(0,0,0,0.08); }
 .message.assistant p { margin-bottom: 6px; }
 .message.assistant p:last-child { margin-bottom: 0; }
 .message.assistant code {
@@ -696,7 +740,7 @@ body.cyber .typing-dots span {
   background: var(--surface);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  border-top: 0.5px solid rgba(255,255,255,0.06);
+  border-top: 0.5px solid rgba(0,0,0,0.06);
 }
 .chat-input {
   flex: 1;
