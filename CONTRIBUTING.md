@@ -102,6 +102,44 @@ chore: 构建/工具链
 - `fix: 修复PDF导入中文乱码`
 - `refactor: 提取公共的消息渲染函数`
 
+## 用 Claude Code 提交贡献
+
+如果你也在用 Claude Code，可以直接让它帮你从改代码到提 PR 全自动完成。
+
+### 准备工作
+
+先让 Claude Code 了解项目背景：
+
+```
+你现在在帮我优化一个开源桌宠项目 desktop-pet，
+仓库在 https://github.com/yangr8640-eng/desktop-pet，
+我已经 Fork 并 Clone 到了本地。
+
+请先阅读 CONTRIBUTING.md 了解项目规范和代码风格。
+```
+
+### 日常贡献的话术
+
+直接说需求就行：
+
+```
+帮我给桌宠加一个功能：当用户输入特定关键词时，
+自动更换桌宠形象。
+
+改动完成后帮我用 Conventional Commits 格式提交，
+然后提 PR 到 yangr8640-eng/desktop-pet 的 main 分支。
+```
+
+### PR 话术
+
+```
+把当前分支的改动推到我 Fork 的仓库，
+然后用 gh 命令给 yangr8640-eng/desktop-pet 的 main 分支提一个 PR，
+标题写 "feat: xxx"，描述写清楚改了什么。
+```
+
+Claude Code 会自动完成：读代码 → 改文件 → commit → push → `gh pr create`，全程不需要离开终端。
+
 ## 常见贡献方向
 
 - 🎨 **新桌宠形象** — 在 `pet/themes/` 下新建目录，放入 `normal.svg` + `mouthopen.svg`，在 `themes.js` 注册
