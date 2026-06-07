@@ -141,6 +141,10 @@ A: 支持！请切换到 [`windows` 分支](https://github.com/yangr8640-eng/des
 - [mammoth](https://github.com/mwilliamson/mammoth.js) — DOCX解析
 - [pdf-parse](https://github.com/nisaacson/pdf-parse) — PDF解析
 
+## 参与贡献 / Contributing
+
+欢迎提交 Pull Request！详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 ## License
 
 MIT © yangr8640-eng
