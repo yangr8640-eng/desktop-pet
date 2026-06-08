@@ -23,6 +23,12 @@ const themeSelect = document.getElementById('themeSelect');
 const headerIcon = document.getElementById('headerIcon');
 const headerTitle = document.getElementById('headerTitle');
 
+const historyBtn = document.getElementById('historyBtn');
+const historyPanel = document.getElementById('historyPanel');
+const historyCloseBtn = document.getElementById('historyCloseBtn');
+const historyList = document.getElementById('historyList');
+const historySearchInput = document.getElementById('historySearchInput');
+
 const modelSelect = document.getElementById('modelSelect');
 const modelNameInput = document.getElementById('modelNameInput');
 const modelUrlInput = document.getElementById('modelUrlInput');
@@ -88,6 +94,29 @@ function applyTheme(theme) {
   if (welcomeText) welcomeText.textContent = theme.welcomeGreeting;
 
   themeSelect.value = theme.id;
+
+  // Show/hide expression bar (only for themes with expressions)
+  const exprBar = document.getElementById('expressionBar');
+  if (exprBar) {
+    const hasExpr = theme.expressions && Object.keys(theme.expressions).length > 1;
+    exprBar.style.display = hasExpr ? 'flex' : 'none';
+  }
+}
+
+function setupExpressionButtons() {
+  const exprBar = document.getElementById('expressionBar');
+  if (!exprBar) return;
+  exprBar.querySelectorAll('.expr-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const expr = btn.dataset.expr;
+      if (window.petAPI && window.petAPI.setPetExpression) {
+        window.petAPI.setPetExpression(expr);
+      }
+      // Highlight active button
+      exprBar.querySelectorAll('.expr-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
 }
 
 function renderWelcomeMessage(subtitle) {
@@ -97,6 +126,72 @@ function renderWelcomeMessage(subtitle) {
       <div class="welcome-text">${currentWelcomeGreeting}</div>
       <div class="welcome-sub">${subtitle || currentWelcomeSubtitle}</div>
     </div>`;
+}
+
+/* ─── History Panel ─── */
+let allConversations = [];
+
+async function loadHistory() {
+  allConversations = await window.petAPI.getAllConversations();
+  renderHistory();
+}
+
+function renderHistory(filterText) {
+  const q = (filterText || historySearchInput.value || '').trim().toLowerCase();
+  historyList.innerHTML = '';
+
+  let items = allConversations;
+  if (q) {
+    items = items.filter(c =>
+      (c.title && c.title.toLowerCase().includes(q)) ||
+      (c.messages && c.messages.some(m => m.content && m.content.toLowerCase().includes(q)))
+    );
+  }
+
+  if (items.length === 0) {
+    historyList.innerHTML = `<div class="history-empty">${q ? '没有找到匹配的对话' : '还没有聊天记录'}</div>`;
+    return;
+  }
+
+  items.forEach(conv => {
+    const lastMsg = conv.messages && conv.messages.length > 0
+      ? conv.messages[conv.messages.length - 1].content
+      : '';
+    const preview = lastMsg.length > 80 ? lastMsg.slice(0, 80) + '...' : lastMsg;
+    const msgCount = conv.messages ? Math.floor(conv.messages.length / 2) : 0;
+    const date = conv.updatedAt
+      ? new Date(conv.updatedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+      : '';
+
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.dataset.id = conv.id;
+
+    const msgPreview = preview
+      ? `<div class="history-item-preview">${escapeHtml(preview)}</div>`
+      : '';
+
+    item.innerHTML = `
+      <div class="history-item-top">
+        <span class="history-item-title">${escapeHtml(conv.title || '新对话')}</span>
+        <span class="history-item-meta">${msgCount}条 · ${date}</span>
+      </div>
+      ${msgPreview}
+    `;
+
+    item.addEventListener('click', async () => {
+      // Close history panel
+      historyPanel.classList.remove('open');
+      // Switch to this conversation
+      isSwitchingConversation = true;
+      await window.petAPI.switchConversation(conv.id);
+      await loadConversationMessages();
+      await refreshConversationSelect();
+      isSwitchingConversation = false;
+    });
+
+    historyList.appendChild(item);
+  });
 }
 
 /* ─── Init ─── */
@@ -138,6 +233,8 @@ async function init() {
   window.petAPI.onMessagesUpdated(async () => {
     await loadConversationMessages();
     await refreshConversationSelect();
+    // Refresh history data in background
+    allConversations = await window.petAPI.getAllConversations();
   });
 
   // Listen for theme changes
@@ -157,6 +254,16 @@ async function init() {
     setTimeout(() => {
       messagesArea.scrollTop = messagesArea.scrollHeight;
     }, 100);
+  });
+
+  // Tool confirmation listener
+  window.petAPI.onToolConfirm((data) => {
+    showToolConfirmation(data);
+  });
+
+  // Tool execution status listener
+  window.petAPI.onToolExecutionStatus((data) => {
+    updateToolStatus(data);
   });
 }
 
@@ -317,24 +424,53 @@ function addMessage(role, content, animate = true) {
 /* ─── Send message ─── */
 async function sendMessage() {
   const text = chatInput.value.trim();
-  if (!text || isLoading) return;
+  if ((!text && pendingFiles.length === 0) || isLoading) return;
 
   chatInput.value = '';
   chatInput.style.height = 'auto';
   sendBtn.disabled = true;
   isLoading = true;
 
-  addMessage('user', text);
+  // If there are pending files, read their content and prepend to message
+  let fullContent = text;
+  if (pendingFiles.length > 0) {
+    const filePaths = pendingFiles.map(f => f.filePath);
+    const fileResults = await window.petAPI.readPendingFiles(filePaths);
+
+    const fileContext = fileResults.map(r => {
+      if (r.error) return `[文件: ${r.fileName} - 读取失败: ${r.error}]`;
+      return `[文件: ${r.fileName}]\n${r.content}\n[${r.fileName} 结束]`;
+    }).join('\n\n');
+
+    fullContent = `${fileContext}\n\n---\n用户指令: ${text}`;
+
+    // Clear pending files (they're now sent with the message)
+    clearPendingFiles();
+  }
+
+  addMessage('user', text || `📄 发送了 ${pendingFiles.length > 0 ? pendingFiles.length + ' 个文件' : ''}`);
   typingDots.classList.add('show');
   messagesArea.scrollTop = messagesArea.scrollHeight;
 
+  // Safety timeout: auto-reset loading after 120s
+  const safetyTimer = setTimeout(() => {
+    if (isLoading) {
+      isLoading = false;
+      sendBtn.disabled = false;
+      typingDots.classList.remove('show');
+      addMessage('assistant', '⏱️ 请求超时，请重试');
+      chatInput.focus();
+    }
+  }, 120000);
+
   try {
-    const reply = await window.petAPI.sendMessage(text);
+    const reply = await window.petAPI.sendMessage(fullContent);
+    clearTimeout(safetyTimer);
     typingDots.classList.remove('show');
     addMessage('assistant', reply);
-    // Refresh dropdown in case title was auto-generated
     await refreshConversationSelect();
   } catch (err) {
+    clearTimeout(safetyTimer);
     typingDots.classList.remove('show');
     addMessage('assistant', `哎呀，发送失败了: ${err.message}`);
   }
@@ -344,48 +480,171 @@ async function sendMessage() {
   chatInput.focus();
 }
 
-/* ─── File Import ─── */
-importBtn.addEventListener('click', async () => {
-  if (isLoading) return;
+/* ─── Pending Files (preview chips above input) ─── */
+let pendingFiles = []; // [{ filePath, fileName, ext }]
 
-  const result = await window.petAPI.importFile();
+const filePreviewArea = document.getElementById('filePreviewArea');
+const filePreviewList = document.getElementById('filePreviewList');
 
-  if (!result) return; // User cancelled
+function getFileIcon(ext) {
+  const icons = {
+    '.pdf': '📕', '.docx': '📘', '.txt': '📄', '.md': '📝',
+    '.json': '📋', '.csv': '📊', '.log': '📋', '.xml': '📋',
+    '.yaml': '📋', '.yml': '📋',
+    '.jpg': '🖼️', '.jpeg': '🖼️', '.png': '🖼️', '.gif': '🎨',
+    '.bmp': '🖼️', '.webp': '🖼️', '.svg': '🎨'
+  };
+  return icons[ext] || '📄';
+}
 
-  if (result.error) {
-    addMessage('assistant', `哎呀，${result.error}`);
+function renderFilePreviews() {
+  filePreviewList.innerHTML = '';
+  if (pendingFiles.length === 0) {
+    filePreviewArea.style.display = 'none';
     return;
   }
+  filePreviewArea.style.display = 'block';
 
-  // Show file import message
-  addMessage('user', `📄 导入文档：${result.fileName}`);
+  pendingFiles.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `
+      <span class="file-chip-icon">${getFileIcon(f.ext)}</span>
+      <span class="file-chip-name">${escapeHtml(f.fileName)}</span>
+      <button class="file-chip-remove" data-index="${i}">✕</button>
+    `;
+    chip.querySelector('.file-chip-remove').addEventListener('click', () => {
+      removePendingFile(i);
+    });
+    filePreviewList.appendChild(chip);
+  });
+}
 
-  // Send document content to AI for analysis
-  typingDots.classList.add('show');
-  messagesArea.scrollTop = messagesArea.scrollHeight;
-  sendBtn.disabled = true;
-  isLoading = true;
-
-  const analysisPrompt = `请帮我分析以下文档内容：\n\n文件名：${result.fileName}\n\n${result.content}`;
-
-  try {
-    const reply = await window.petAPI.sendMessage(analysisPrompt);
-    typingDots.classList.remove('show');
-    addMessage('assistant', reply);
-    await refreshConversationSelect();
-  } catch (err) {
-    typingDots.classList.remove('show');
-    addMessage('assistant', `哎呀，分析文件时出错了: ${err.message}`);
+function addPendingFile(filePath, fileName) {
+  const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+  const allowed = ['.pdf', '.docx', '.txt', '.md', '.json', '.csv', '.log', '.xml', '.yaml', '.yml',
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+  if (!allowed.includes(ext)) {
+    addMessage('assistant', `暂不支持 ${ext} 格式的文件~`);
+    return false;
   }
+  // Avoid duplicates
+  if (pendingFiles.some(f => f.filePath === filePath)) return false;
+  pendingFiles.push({ filePath, fileName, ext });
+  renderFilePreviews();
+  return true;
+}
 
-  sendBtn.disabled = false;
-  isLoading = false;
-  chatInput.focus();
+function removePendingFile(index) {
+  pendingFiles.splice(index, 1);
+  renderFilePreviews();
+}
+
+function clearPendingFiles() {
+  pendingFiles = [];
+  renderFilePreviews();
+}
+
+/* ─── File Import (📎 button) ─── */
+const hiddenFileInput = document.getElementById('hiddenFileInput');
+
+importBtn.addEventListener('click', () => {
+  hiddenFileInput.click();
+});
+
+hiddenFileInput.addEventListener('change', () => {
+  const files = hiddenFileInput.files;
+  if (!files || files.length === 0) return;
+
+  let added = 0;
+  for (const file of files) {
+    const filePath = window.petAPI.getFilePath(file);
+    if (filePath && addPendingFile(filePath, file.name)) {
+      added++;
+    }
+  }
+  hiddenFileInput.value = '';
+  if (added > 0) chatInput.focus();
+});
+
+/* ─── Drag & Drop files as pending chips ─── */
+const dropOverlay = document.getElementById('dropOverlay');
+let dropCounter = 0;
+
+document.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dropCounter++;
+  if (dropCounter === 1) {
+    dropOverlay.classList.add('show');
+  }
+});
+
+document.addEventListener('dragleave', (e) => {
+  dropCounter--;
+  if (dropCounter === 0) {
+    dropOverlay.classList.remove('show');
+  }
+});
+
+document.addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+
+document.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dropCounter = 0;
+  dropOverlay.classList.remove('show');
+
+  const files = e.dataTransfer.files;
+  if (!files || files.length === 0) return;
+
+  let added = 0;
+  for (const file of files) {
+    const filePath = window.petAPI.getFilePath(file);
+    if (filePath && addPendingFile(filePath, file.name)) {
+      added++;
+    }
+  }
+  if (added > 0) {
+    chatInput.focus();
+    chatInput.placeholder = '输入指令，将文件发送给AI...';
+    setTimeout(() => {
+      chatInput.placeholder = `跟${headerTitle.textContent || 'Claude'}说点什么...`;
+    }, 2000);
+  }
 });
 
 /* ─── Settings ─── */
 settingsBtn.addEventListener('click', () => {
   settingsPanel.classList.toggle('open');
+  historyPanel.classList.remove('open');
+});
+
+/* ─── History Panel ─── */
+historyBtn.addEventListener('click', async () => {
+  const isOpen = historyPanel.classList.contains('open');
+  if (isOpen) {
+    historyPanel.classList.remove('open');
+  } else {
+    settingsPanel.classList.remove('open');
+    await loadHistory();
+    historyPanel.classList.add('open');
+  }
+});
+
+historyCloseBtn.addEventListener('click', () => {
+  historyPanel.classList.remove('open');
+});
+
+historySearchInput.addEventListener('input', () => {
+  renderHistory();
+});
+
+// Close history when clicking outside
+document.addEventListener('click', (e) => {
+  if (!historyPanel.contains(e.target) && e.target !== historyBtn && !historyBtn.contains(e.target)) {
+    historyPanel.classList.remove('open');
+  }
 });
 
 /* ─── Search Toggle ─── */
@@ -586,10 +845,14 @@ themeSelect.addEventListener('change', async () => {
 
 /* ─── New chat ─── */
 newChatBtn.addEventListener('click', async () => {
+  historyPanel.classList.remove('open');
+  settingsPanel.classList.remove('open');
   await window.petAPI.newConversation();
   await refreshConversationSelect();
   messagesArea.innerHTML = renderWelcomeMessage('有什么想聊的吗？');
   messagesArea.appendChild(typingDots);
+  // Refresh history data
+  allConversations = await window.petAPI.getAllConversations();
 });
 
 /* ─── Close ─── */
@@ -612,10 +875,125 @@ chatInput.addEventListener('keydown', (e) => {
   }
 });
 
+// IME composition handling for Chinese input
+let isComposing = false;
+chatInput.addEventListener('compositionstart', () => {
+  isComposing = true;
+});
+chatInput.addEventListener('compositionend', () => {
+  isComposing = false;
+});
+
 chatInput.addEventListener('input', () => {
   chatInput.style.height = 'auto';
   chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
 });
+
+/* ─── Tool Confirmation ─── */
+let pendingToolConfirm = null;
+
+/** Show the tool confirmation dialog */
+function showToolConfirmation(data) {
+  const overlay = document.getElementById('toolConfirmOverlay');
+  const nameEl = document.getElementById('confirmToolName');
+  const paramsEl = document.getElementById('confirmToolParams');
+
+  if (!overlay || !nameEl || !paramsEl) return;
+
+  pendingToolConfirm = data;
+
+  // Map tool names to readable labels
+  const toolLabels = {
+    write_file: '📝 写文件',
+    run_command: '💻 运行命令'
+  };
+
+  nameEl.textContent = toolLabels[data.toolName] || `🔧 ${data.toolName}`;
+
+  // Format parameters
+  const paramLines = Object.entries(data.args).map(([key, val]) => {
+    const label = key === 'command' ? '命令' :
+                  key === 'path' ? '路径' :
+                  key === 'content' ? '内容' :
+                  key === 'filename' ? '文件名' : key;
+    // Truncate long values for display
+    const displayVal = typeof val === 'string' && val.length > 100
+      ? val.slice(0, 100) + '...'
+      : val;
+    return `<div class="tool-confirm-param-line"><span class="tool-confirm-param-key">${label}:</span> <span class="tool-confirm-param-val">${escapeHtml(displayVal)}</span></div>`;
+  }).join('');
+  paramsEl.innerHTML = paramLines;
+
+  overlay.style.display = 'flex';
+}
+
+/** Escape HTML for safe display */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/** Handle confirm button clicks */
+document.getElementById('confirmAllowBtn').addEventListener('click', async () => {
+  if (pendingToolConfirm) {
+    const data = { toolCallId: pendingToolConfirm.toolCallId, confirmed: true };
+    await window.petAPI.confirmToolResponse(data);
+    document.getElementById('toolConfirmOverlay').style.display = 'none';
+    pendingToolConfirm = null;
+  }
+});
+
+document.getElementById('confirmDenyBtn').addEventListener('click', async () => {
+  if (pendingToolConfirm) {
+    const data = { toolCallId: pendingToolConfirm.toolCallId, confirmed: false };
+    await window.petAPI.confirmToolResponse(data);
+    document.getElementById('toolConfirmOverlay').style.display = 'none';
+    pendingToolConfirm = null;
+  }
+});
+
+/** Show tool execution status inline in messages */
+function updateToolStatus(data) {
+  // Find or create a status element for this tool call
+  let statusEl = document.getElementById(`tool-status-${data.toolCallId}`);
+
+  if (data.status === 'pending') {
+    // Create new status element
+    statusEl = document.createElement('div');
+    statusEl.id = `tool-status-${data.toolCallId}`;
+    statusEl.className = 'tool-call-status';
+    messagesArea.insertBefore(statusEl, typingDots);
+  }
+
+  if (statusEl) {
+    const toolLabels = {
+      write_file: '📝 写文件',
+      desktop_write_file: '📝 保存到桌面',
+      read_file: '📖 读文件',
+      list_directory: '📂 浏览目录',
+      run_command: '💻 运行命令',
+      get_system_info: 'ℹ️ 系统信息',
+      open_url: '🔗 打开链接',
+      get_desktop_path: '📁 桌面路径'
+    };
+    const label = toolLabels[data.toolName] || `🔧 ${data.toolName}`;
+
+    if (data.status === 'pending') {
+      statusEl.innerHTML = `<span class="tool-status-spinner">⟳</span> ${label}...`;
+    } else if (data.status === 'completed') {
+      statusEl.innerHTML = `<span class="tool-status-done">✓</span> ${label} 完成`;
+      statusEl.classList.add('done');
+      // Auto-remove after 3 seconds
+      setTimeout(() => { statusEl.remove(); }, 3000);
+    } else if (data.status === 'denied') {
+      statusEl.innerHTML = `<span class="tool-status-denied">✕</span> ${label} 已拒绝`;
+      statusEl.classList.add('denied');
+      setTimeout(() => { statusEl.remove(); }, 2000);
+    }
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+  }
+}
 
 /* ─── Resize handles ─── */
 let isResizing = false;
@@ -665,3 +1043,4 @@ document.addEventListener('mouseup', () => {
 });
 
 init();
+setupExpressionButtons();
