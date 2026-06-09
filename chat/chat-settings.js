@@ -30,6 +30,28 @@ window.Chat = window.Chat || {};
     if (welcomeText) welcomeText.textContent = theme.welcomeGreeting;
 
     C.elements.themeSelect.value = theme.id;
+
+    // Show/hide expression bar (only for themes with expressions)
+    const exprBar = C.elements.expressionBar;
+    if (exprBar) {
+      const hasExpr = theme.expressions && Object.keys(theme.expressions).length > 1;
+      exprBar.style.display = hasExpr ? 'flex' : 'none';
+    }
+  };
+
+  C.setupExpressionButtons = function() {
+    const exprBar = C.elements.expressionBar;
+    if (!exprBar) return;
+    exprBar.querySelectorAll('.expr-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const expr = btn.dataset.expr;
+        if (window.petAPI && window.petAPI.setPetExpression) {
+          window.petAPI.setPetExpression(expr);
+        }
+        exprBar.querySelectorAll('.expr-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
   };
 
   C.loadModelProviders = async function() {
@@ -122,6 +144,8 @@ window.Chat = window.Chat || {};
 
     settingsBtn.addEventListener('click', () => {
       settingsPanel.classList.toggle('open');
+      const historyPanel = C.elements.historyPanel;
+      if (historyPanel) historyPanel.classList.remove('open');
     });
 
     modelSelect.addEventListener('change', async () => {
@@ -215,7 +239,6 @@ window.Chat = window.Chat || {};
       C.applyTheme(theme);
     });
 
-    // Auto-launch toggle
     const autoLaunchToggle = C.elements.autoLaunchToggle;
     if (autoLaunchToggle) {
       window.petAPI.getAutoLaunch().then(enabled => {
@@ -225,5 +248,8 @@ window.Chat = window.Chat || {};
         await window.petAPI.setAutoLaunch(autoLaunchToggle.checked);
       });
     }
+
+    // Initialize expression buttons
+    C.setupExpressionButtons();
   };
 })();
