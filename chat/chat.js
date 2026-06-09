@@ -1,15 +1,78 @@
-// chat.js — Bootstrap init, global event handlers, resize
+// chat.js — Bootstrap init, global event handlers, resize, tool confirm
 
 window.Chat = window.Chat || {};
 (function() {
   const C = window.Chat;
 
+  /* ─── Tool Confirmation ─── */
+  function showToolConfirmation(data) {
+    const overlay = C.elements.toolConfirmOverlay;
+    const nameEl = C.elements.confirmToolName;
+    const paramsEl = C.elements.confirmToolParams;
+    if (!overlay || !nameEl || !paramsEl) return;
+
+    C.state.pendingToolConfirm = data;
+
+    const toolLabels = {
+      write_file: '📝 写文件',
+      run_command: '💻 运行命令'
+    };
+    nameEl.textContent = toolLabels[data.toolName] || `🔧 ${data.toolName}`;
+
+    const paramLines = Object.entries(data.args).map(([key, val]) => {
+      const label = key === 'command' ? '命令' :
+                    key === 'path' ? '路径' :
+                    key === 'content' ? '内容' :
+                    key === 'filename' ? '文件名' : key;
+      const displayVal = typeof val === 'string' && val.length > 100
+        ? val.slice(0, 100) + '...'
+        : val;
+      return `<div class="tool-confirm-param-line"><span class="tool-confirm-param-key">${label}:</span> <span class="tool-confirm-param-val">${C.escapeHtml(String(displayVal))}</span></div>`;
+    }).join('');
+    paramsEl.innerHTML = paramLines;
+
+    overlay.style.display = 'flex';
+  }
+
+  function updateToolStatus(data) {
+    let statusEl = document.getElementById(`tool-status-${data.toolCallId}`);
+    const typingDots = C.elements.typingDots;
+
+    if (data.status === 'pending') {
+      statusEl = document.createElement('div');
+      statusEl.id = `tool-status-${data.toolCallId}`;
+      statusEl.className = 'tool-call-status';
+      C.elements.messagesArea.insertBefore(statusEl, typingDots);
+    }
+
+    if (statusEl) {
+      const toolLabels = {
+        write_file: '📝 写文件', desktop_write_file: '📝 保存到桌面',
+        read_file: '📖 读文件', list_directory: '📂 浏览目录',
+        run_command: '💻 运行命令', get_system_info: 'ℹ️ 系统信息',
+        open_url: '🔗 打开链接', get_desktop_path: '📁 桌面路径'
+      };
+      const label = toolLabels[data.toolName] || `🔧 ${data.toolName}`;
+
+      if (data.status === 'pending') {
+        statusEl.innerHTML = `<span class="tool-status-spinner">⟳</span> ${label}...`;
+      } else if (data.status === 'completed') {
+        statusEl.innerHTML = `<span class="tool-status-done">✓</span> ${label} 完成`;
+        statusEl.classList.add('done');
+        setTimeout(() => { statusEl.remove(); }, 3000);
+      } else if (data.status === 'denied') {
+        statusEl.innerHTML = `<span class="tool-status-denied">✕</span> ${label} 已拒绝`;
+        statusEl.classList.add('denied');
+        setTimeout(() => { statusEl.remove(); }, 2000);
+      }
+      C.elements.messagesArea.scrollTop = C.elements.messagesArea.scrollHeight;
+    }
+  }
+
   /* ─── Init ─── */
   C.init = async function() {
-    // Load model providers
     await C.loadModelProviders();
 
-    // Validate active model's API key on startup
     try {
       if (C.state.currentModelProvider) {
         const validation = await window.petAPI.validateModelApiKey(C.state.currentModelProvider.id);
@@ -17,38 +80,30 @@ window.Chat = window.Chat || {};
           C.showApiKeyWarning(validation.reason);
         }
       }
-    } catch {
-      // IPC itself fails — don't block
-    }
+    } catch {}
 
-    // Load personality
     const personality = await window.petAPI.getPersonality();
     C.elements.personalityInput.value = personality;
 
-    // Load and apply current theme
     const theme = await window.petAPI.getTheme();
     C.applyTheme(theme);
 
-    // Load conversations
     await C.refreshConversationSelect();
     await C.loadConversationMessages();
 
-    // Search toggle
     await C.initSearchToggle();
 
-    // Windows platform class
     const platform = await window.petAPI.getPlatform();
     if (platform === 'win32') {
       document.body.classList.add('win32');
     }
 
-    // External message updates (e.g., file drop analysis)
     window.petAPI.onMessagesUpdated(async () => {
       await C.loadConversationMessages();
       await C.refreshConversationSelect();
+      C.loadHistory(); // background refresh
     });
 
-    // Theme change listener
     window.petAPI.onThemeChanged((theme) => {
       C.applyTheme(theme);
       const messagesArea = C.elements.messagesArea;
@@ -60,7 +115,6 @@ window.Chat = window.Chat || {};
       }
     });
 
-    // Focus input listener
     window.petAPI.onFocusInput(() => {
       C.elements.chatInput.focus();
       setTimeout(() => {
@@ -68,19 +122,63 @@ window.Chat = window.Chat || {};
       }, 100);
     });
 
-    // Auto-update listeners
+    // Tool confirmation listener
+    if (window.petAPI.onToolConfirm) {
+      window.petAPI.onToolConfirm((data) => {
+        showToolConfirmation(data);
+      });
+    }
+
+    // Tool execution status listener
+    if (window.petAPI.onToolExecutionStatus) {
+      window.petAPI.onToolExecutionStatus((data) => {
+        updateToolStatus(data);
+      });
+    }
+
     C.setupUpdateListeners();
   };
+
+  /* ─── Tool Confirm Buttons ─── */
+  function initToolConfirmHandlers() {
+    const allowBtn = C.elements.confirmAllowBtn;
+    const denyBtn = C.elements.confirmDenyBtn;
+    const overlay = C.elements.toolConfirmOverlay;
+    if (!allowBtn || !denyBtn || !overlay) return;
+
+    allowBtn.addEventListener('click', async () => {
+      if (C.state.pendingToolConfirm) {
+        const data = { toolCallId: C.state.pendingToolConfirm.toolCallId, confirmed: true };
+        await window.petAPI.confirmToolResponse(data);
+        overlay.style.display = 'none';
+        C.state.pendingToolConfirm = null;
+      }
+    });
+
+    denyBtn.addEventListener('click', async () => {
+      if (C.state.pendingToolConfirm) {
+        const data = { toolCallId: C.state.pendingToolConfirm.toolCallId, confirmed: false };
+        await window.petAPI.confirmToolResponse(data);
+        overlay.style.display = 'none';
+        C.state.pendingToolConfirm = null;
+      }
+    });
+  }
 
   /* ─── New chat, close, quit ─── */
   function initGlobalHandlers() {
     C.elements.newChatBtn.addEventListener('click', async () => {
+      const historyPanel = C.elements.historyPanel;
+      const settingsPanel = C.elements.settingsPanel;
+      if (historyPanel) historyPanel.classList.remove('open');
+      if (settingsPanel) settingsPanel.classList.remove('open');
       await window.petAPI.newConversation();
       await C.refreshConversationSelect();
       const messagesArea = C.elements.messagesArea;
       const typingDots = C.elements.typingDots;
       messagesArea.innerHTML = C.renderWelcomeMessage('有什么想聊的吗？');
       messagesArea.appendChild(typingDots);
+      C.loadHistory(); // background refresh
     });
 
     C.elements.closeBtn.addEventListener('click', () => {
@@ -142,9 +240,11 @@ window.Chat = window.Chat || {};
   // Wire everything up
   initGlobalHandlers();
   C.initConversationDropdown();
+  C.initHistoryPanel();
   C.initInputHandlers();
   C.initSettingsHandlers();
   C.initGlobalSearch();
+  initToolConfirmHandlers();
   initResizeHandlers();
 
   // Bootstrap

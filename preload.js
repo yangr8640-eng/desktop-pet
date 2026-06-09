@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // Conversations
   getConversations: () => ipcRenderer.invoke('get-conversations'),
+  getAllConversations: () => ipcRenderer.invoke('get-all-conversations'),
   getActiveConversationId: () => ipcRenderer.invoke('get-active-conversation-id'),
   switchConversation: (id) => ipcRenderer.invoke('switch-conversation', id),
   newConversation: () => ipcRenderer.invoke('new-conversation'),
@@ -22,6 +23,8 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // File import
   importFile: () => ipcRenderer.invoke('import-file'),
+  importDroppedFile: (filePath) => ipcRenderer.invoke('import-dropped-file', filePath),
+  readPendingFiles: (filePaths) => ipcRenderer.invoke('read-pending-files', filePaths),
 
   // Export
   exportConversation: () => ipcRenderer.invoke('export-conversation'),
@@ -59,6 +62,9 @@ contextBridge.exposeInMainWorld('petAPI', {
   setTheme: (themeId) => ipcRenderer.invoke('set-theme', themeId),
   onThemeChanged: (cb) => ipcRenderer.on('theme-changed', (_event, theme) => cb(theme)),
 
+  // Expression (multi-expression support)
+  setPetExpression: (name) => ipcRenderer.send('set-expression', name),
+
   // Platform
   getPlatform: () => ipcRenderer.invoke('get-platform'),
 
@@ -84,5 +90,11 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // Listen for events from main
   onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb()),
-  onMessagesUpdated: (cb) => ipcRenderer.on('messages-updated', () => cb())
+  onMessagesUpdated: (cb) => ipcRenderer.on('messages-updated', () => cb()),
+
+  // System tools / Agent
+  getSystemTools: () => ipcRenderer.invoke('get-system-tools'),
+  confirmToolResponse: (data) => ipcRenderer.invoke('confirm-tool-response', data),
+  onToolConfirm: (cb) => ipcRenderer.on('request-tool-confirm', (_event, data) => cb(data)),
+  onToolExecutionStatus: (cb) => ipcRenderer.on('tool-execution-status', (_event, data) => cb(data))
 });

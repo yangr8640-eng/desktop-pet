@@ -1,9 +1,10 @@
-// chat-conversations.js — Conversation dropdown management
+// chat-conversations.js — Conversation dropdown & history panel management
 
 window.Chat = window.Chat || {};
 (function() {
   const C = window.Chat;
 
+  /* ─── Dropdown ─── */
   C.filterConversationDropdown = function() {
     const searchInput = document.getElementById('dropdownSearch');
     if (!searchInput) return;
@@ -28,7 +29,6 @@ window.Chat = window.Chat || {};
     const activeConv = conversations.find(c => c.id === activeId);
     toggleText.textContent = activeConv ? (activeConv.title || '新对话') : '新对话';
 
-    // Clear all dynamic items but keep search container
     dropdownList.querySelectorAll('.dropdown-item').forEach(el => el.remove());
     if (conversations.length === 0) return;
 
@@ -52,7 +52,6 @@ window.Chat = window.Chat || {};
       dropdownList.appendChild(item);
     });
 
-    // Re-apply any active search filter
     C.filterConversationDropdown();
   };
 
@@ -61,7 +60,6 @@ window.Chat = window.Chat || {};
     const conversationDropdown = C.elements.conversationDropdown;
     dropdownList.style.display = 'none';
     conversationDropdown.classList.remove('open');
-    // Clear search on close
     const searchInput = document.getElementById('dropdownSearch');
     if (searchInput) searchInput.value = '';
   };
@@ -90,6 +88,114 @@ window.Chat = window.Chat || {};
     messagesArea.scrollTop = messagesArea.scrollHeight;
   };
 
+  /* ─── History Panel ─── */
+  let allConversations = [];
+
+  C.loadHistory = async function() {
+    allConversations = await window.petAPI.getAllConversations();
+    C.renderHistory();
+  };
+
+  C.renderHistory = function(filterText) {
+    const q = (filterText || (C.elements.historySearchInput ? C.elements.historySearchInput.value : '') || '').trim().toLowerCase();
+    const historyList = C.elements.historyList;
+    if (!historyList) return;
+    historyList.innerHTML = '';
+
+    let items = allConversations;
+    if (q) {
+      items = items.filter(c =>
+        (c.title && c.title.toLowerCase().includes(q)) ||
+        (c.messages && c.messages.some(m => m.content && m.content.toLowerCase().includes(q)))
+      );
+    }
+
+    if (items.length === 0) {
+      historyList.innerHTML = `<div class="history-empty">${q ? '没有找到匹配的对话' : '还没有聊天记录'}</div>`;
+      return;
+    }
+
+    items.forEach(conv => {
+      const lastMsg = conv.messages && conv.messages.length > 0
+        ? conv.messages[conv.messages.length - 1].content
+        : '';
+      const preview = lastMsg.length > 80 ? lastMsg.slice(0, 80) + '...' : lastMsg;
+      const msgCount = conv.messages ? Math.floor(conv.messages.length / 2) : 0;
+      const date = conv.updatedAt
+        ? new Date(conv.updatedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+        : '';
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.dataset.id = conv.id;
+
+      const msgPreview = preview
+        ? `<div class="history-item-preview">${C.escapeHtml(preview)}</div>`
+        : '';
+
+      item.innerHTML = `
+        <div class="history-item-top">
+          <span class="history-item-title">${C.escapeHtml(conv.title || '新对话')}</span>
+          <span class="history-item-meta">${msgCount}条 · ${date}</span>
+        </div>
+        ${msgPreview}
+      `;
+
+      item.addEventListener('click', async () => {
+        const historyPanel = C.elements.historyPanel;
+        if (historyPanel) historyPanel.classList.remove('open');
+        C.state.isSwitchingConversation = true;
+        await window.petAPI.switchConversation(conv.id);
+        await C.loadConversationMessages();
+        await C.refreshConversationSelect();
+        C.state.isSwitchingConversation = false;
+      });
+
+      historyList.appendChild(item);
+    });
+  };
+
+  C.initHistoryPanel = function() {
+    const historyBtn = C.elements.historyBtn;
+    const historyPanel = C.elements.historyPanel;
+    const historyCloseBtn = C.elements.historyCloseBtn;
+    const historySearchInput = C.elements.historySearchInput;
+
+    if (!historyBtn || !historyPanel) return;
+
+    historyBtn.addEventListener('click', async () => {
+      const isOpen = historyPanel.classList.contains('open');
+      if (isOpen) {
+        historyPanel.classList.remove('open');
+      } else {
+        if (C.elements.settingsPanel) C.elements.settingsPanel.classList.remove('open');
+        await C.loadHistory();
+        historyPanel.classList.add('open');
+      }
+    });
+
+    if (historyCloseBtn) {
+      historyCloseBtn.addEventListener('click', () => {
+        historyPanel.classList.remove('open');
+      });
+    }
+
+    if (historySearchInput) {
+      historySearchInput.addEventListener('input', () => {
+        C.renderHistory();
+      });
+    }
+
+    // Close history when clicking outside
+    document.addEventListener('click', (e) => {
+      if (historyPanel && !historyPanel.contains(e.target) &&
+          historyBtn && e.target !== historyBtn && !historyBtn.contains(e.target)) {
+        historyPanel.classList.remove('open');
+      }
+    });
+  };
+
+  /* ─── Dropdown init ─── */
   C.initConversationDropdown = function() {
     const dropdownToggle = C.elements.dropdownToggle;
     const dropdownList = C.elements.dropdownList;
@@ -105,7 +211,6 @@ window.Chat = window.Chat || {};
       } else {
         dropdownList.style.display = 'block';
         conversationDropdown.classList.add('open');
-        // Clear and focus search input
         const searchInput = document.getElementById('dropdownSearch');
         if (searchInput) {
           searchInput.value = '';
@@ -119,7 +224,7 @@ window.Chat = window.Chat || {};
       if (!conversationDropdown.contains(e.target)) {
         C.closeDropdown();
       }
-      if (!settingsPanel.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
+      if (settingsPanel && !settingsPanel.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
         settingsPanel.classList.remove('open');
       }
     });
@@ -158,7 +263,6 @@ window.Chat = window.Chat || {};
       }
     });
 
-    // Search input filter
     const searchInput = document.getElementById('dropdownSearch');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {

@@ -45,7 +45,26 @@ window.Chat = window.Chat || {};
     updateBannerDismiss: document.getElementById('updateBannerDismiss'),
     globalSearchOverlay: document.getElementById('globalSearchOverlay'),
     globalSearchInput: document.getElementById('globalSearchInput'),
-    globalSearchResults: document.getElementById('globalSearchResults')
+    globalSearchResults: document.getElementById('globalSearchResults'),
+    // New elements for history panel
+    historyBtn: document.getElementById('historyBtn'),
+    historyPanel: document.getElementById('historyPanel'),
+    historyCloseBtn: document.getElementById('historyCloseBtn'),
+    historyList: document.getElementById('historyList'),
+    historySearchInput: document.getElementById('historySearchInput'),
+    // New elements for file drag-drop
+    filePreviewArea: document.getElementById('filePreviewArea'),
+    filePreviewList: document.getElementById('filePreviewList'),
+    hiddenFileInput: document.getElementById('hiddenFileInput'),
+    dropOverlay: document.getElementById('dropOverlay'),
+    // Tool confirmation
+    toolConfirmOverlay: document.getElementById('toolConfirmOverlay'),
+    confirmToolName: document.getElementById('confirmToolName'),
+    confirmToolParams: document.getElementById('confirmToolParams'),
+    confirmAllowBtn: document.getElementById('confirmAllowBtn'),
+    confirmDenyBtn: document.getElementById('confirmDenyBtn'),
+    // Expression bar
+    expressionBar: document.getElementById('expressionBar')
   };
 
   // ─── Shared State ───
@@ -56,10 +75,15 @@ window.Chat = window.Chat || {};
     currentModelProvider: null,
     modelProviders: [],
     streamCleanup: null,
-    currentWelcomeEmoji: '💠',  // 💠
+    currentWelcomeEmoji: '💠',
     currentWelcomeGreeting: 'Hello! 我是Claude。💠',
     currentWelcomeSubtitle: '有什么我可以帮你的？用代码说话也行，用自然语言聊天也可以~',
-    resize: { isResizing: false, dir: null, start: {} }
+    resize: { isResizing: false, dir: null, start: {} },
+    // File drag-drop state
+    pendingFiles: [],
+    dropCounter: 0,
+    // Tool confirm state
+    pendingToolConfirm: null
   };
 
   // ─── Typing Indicator (singleton) ───
