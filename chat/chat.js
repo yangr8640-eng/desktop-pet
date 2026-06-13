@@ -116,10 +116,20 @@ window.Chat = window.Chat || {};
     });
 
     window.petAPI.onFocusInput(() => {
-      C.elements.chatInput.focus();
-      setTimeout(() => {
-        C.elements.messagesArea.scrollTop = C.elements.messagesArea.scrollHeight;
-      }, 100);
+      // Focus input listener — with retry for reliability
+      const tryFocus = (attempt = 0) => {
+        if (attempt > 5) return;
+        C.elements.chatInput.focus({ preventScroll: false });
+        // Check if focus actually landed — retry if not
+        setTimeout(() => {
+          if (document.activeElement !== C.elements.chatInput) {
+            tryFocus(attempt + 1);
+          } else {
+            C.elements.messagesArea.scrollTop = C.elements.messagesArea.scrollHeight;
+          }
+        }, attempt * 50 + 50);
+      };
+      tryFocus();
     });
 
     // Tool confirmation listener

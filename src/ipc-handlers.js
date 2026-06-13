@@ -31,8 +31,32 @@ function registerIpcHandlers() {
   }
 
   /* ─── AI Chat (with Tool Calling) ─── */
-  ipcMain.on('send-message', async (event, message) => {
-    const provider = getActiveModelProvider();
+  ipcMain.on('send-message', async (event, data) => {
+    let provider = getActiveModelProvider();
+
+    // Support both string (legacy) and {text, images} format
+    const message = typeof data === 'string' ? data : (data.text || '');
+    const images = typeof data === 'object' && Array.isArray(data.images) ? data.images : [];
+
+    // Auto-switch to vision-capable provider when images present
+    let visionSwitched = false;
+    if (images.length > 0 && !provider.supportsVision) {
+      const providers = getModelProviders();
+      const visionProvider = providers.find(p => p.supportsVision && p.apiKey);
+      if (visionProvider) {
+        provider = visionProvider;
+        store.set('activeModelProviderId', visionProvider.id);
+        visionSwitched = true;
+        console.log(`🔄 检测到图片，自动切换到 ${visionProvider.name} (${visionProvider.modelName})`);
+      } else {
+        event.sender.send('stream-chunk', {
+          text: `📷 检测到图片，但当前${provider.name}不支持图片分析，且没有找到配置了API Key的视觉模型。\n\n请在⚙️设置中添加 SiliconFlow 的 API Key 或配置 OpenAI 的 Key。`,
+          done: true, error: true
+        });
+        return;
+      }
+    }
+
     if (!provider.apiKey) {
       event.sender.send('stream-chunk', {
         text: `你还没设置${provider.name}的API Key呢！请在右上角⚙️设置中输入API Key~`,
@@ -60,10 +84,26 @@ function registerIpcHandlers() {
       }
     }
 
-    const messages = [buildSystemPrompt(searchContext), ...history, { role: 'user', content: message }];
+    // Build user message content — simple string or vision array
+    const userContent = images.length > 0
+      ? [
+          { type: 'text', text: message || '请分析以上图片' },
+          ...images.map(img => ({
+            type: 'image_url',
+            image_url: { url: `data:${img.mimeType};base64,${img.base64}` }
+          }))
+        ]
+      : message;
+
+    const messages = [buildSystemPrompt(searchContext), ...history, { role: 'user', content: userContent }];
+
+    // Store simplified text version in conversation history
+    const displayText = images.length > 0
+      ? `📷 ${images.map(i => i.fileName).join(', ')}${message ? '\n\n' + message : ''}`
+      : message;
 
     // Persist user message BEFORE API call — survives failures
-    conv.messages.push({ role: 'user', content: message });
+    conv.messages.push({ role: 'user', content: displayText });
     conv.updatedAt = new Date().toISOString();
     if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
     saveConversations(convs);
@@ -74,8 +114,8 @@ function registerIpcHandlers() {
       conv.messages.push({ role: 'assistant', content: reply });
 
       if (conv.title === '新对话') {
-        const summary = await generateConversationTitle(message, reply);
-        conv.title = summary || message.slice(0, 20) + (message.length > 20 ? '...' : '');
+        const summary = await generateConversationTitle(displayText, reply);
+        conv.title = summary || (displayText ? displayText.slice(0, 20) + (displayText.length > 20 ? '...' : '') : '新对话');
       }
 
       conv.updatedAt = new Date().toISOString();
@@ -83,19 +123,105 @@ function registerIpcHandlers() {
       saveConversations(convs);
 
       // Send the complete response as a stream-chunk (compatible with existing frontend)
-      event.sender.send('stream-chunk', { text: reply, done: true });
-      sendReplyNotification(reply);
+      const result = visionSwitched
+        ? `🔀 已自动切换到 ${provider.name}（支持图片分析）\n\n${reply}`
+        : reply;
+      event.sender.send('stream-chunk', { text: result, done: true });
+      sendReplyNotification(result);
     } catch (err) {
-      event.sender.send('stream-chunk', { text: `出错了: ${err.message}`, done: true, error: true });
+      const providerName = visionSwitched ? provider.name : (getActiveModelProvider().name);
+      event.sender.send('stream-chunk', {
+        text: `出错了 (${providerName}): ${err.message}\n\n请检查：\n1. API Key 是否正确\n2. 模型 "${provider.modelName}" 是否支持图片分析\n3. API 端点是否正确`,
+        done: true, error: true
+      });
     }
   });
 
   /* ─── File Analysis ─── */
   ipcMain.on('analyze-file', async (event, filePath) => {
-    const provider = getActiveModelProvider();
+    let provider = getActiveModelProvider();
     const chatWindow = getChatWindow();
     if (!chatWindow) return;
 
+    const fileName = path.basename(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+    // Handle images with vision API
+    if (IMAGE_EXTS.includes(ext)) {
+      // Auto-switch to vision-capable provider if current one doesn't support vision
+      if (!provider.supportsVision) {
+        const providers = getModelProviders();
+        const visionProvider = providers.find(p => p.supportsVision && p.apiKey);
+        if (visionProvider) {
+          provider = visionProvider;
+          store.set('activeModelProviderId', visionProvider.id);
+        } else {
+          chatWindow.webContents.send('stream-chunk', {
+            text: `📷 这是一张图片，但当前${provider.name}不支持图片分析呢~\n\n请在⚙️设置中选择 "OpenAI / ChatGPT" 或 "SiliconFlow (支持图片)" 并配置API Key，就能分析图片啦~`,
+            done: true, error: true
+          });
+          return;
+        }
+      }
+
+      if (!provider.apiKey) {
+        chatWindow.webContents.send('stream-chunk', {
+          text: `你还没设置${provider.name}的API Key呢！请先在聊天窗口设置API Key~`,
+          done: true, error: true
+        });
+        return;
+      }
+
+      const stat = fs.statSync(filePath);
+      if (stat.size > MAX_IMAGE_SIZE) {
+        chatWindow.webContents.send('stream-chunk', {
+          text: `图片太大啦 (${(stat.size / 1024 / 1024).toFixed(1)}MB)，我吃不下超过5MB的图片~ 压缩一下再给我吧 🥺`,
+          done: true, error: true
+        });
+        return;
+      }
+
+      const imageBuffer = fs.readFileSync(filePath);
+      const mimeType = ext === '.svg' ? 'image/svg+xml' : `image/${ext.slice(1)}`;
+
+      const messages = [
+        buildSystemPrompt(),
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `主人给你丢了一张图片"${fileName}"！请分析这张图片的内容，告诉主人这张图片是什么~` },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBuffer.toString('base64')}` } }
+          ]
+        }
+      ];
+
+      try {
+        const reply = await callAIWithTools(messages);
+        const { conv, convs } = getActiveConversation();
+        conv.messages.push({ role: 'user', content: `📷 拖入图片: ${fileName}` });
+        conv.messages.push({ role: 'assistant', content: reply });
+        if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
+        if (conv.title === '新对话') {
+          const summary = await generateConversationTitle(`用户导入图片: ${fileName}`, reply);
+          conv.title = summary || `图片分析: ${fileName}`;
+        }
+        conv.updatedAt = new Date().toISOString();
+        saveConversations(convs);
+        chatWindow.webContents.send('messages-updated');
+        chatWindow.webContents.send('stream-chunk', { text: reply, done: true });
+        sendReplyNotification(reply);
+      } catch (err) {
+        chatWindow.webContents.send('stream-chunk', {
+          text: `分析图片时出错了: ${err.message}`,
+          done: true, error: true
+        });
+      }
+      return;
+    }
+
+    // Non-image file analysis
     if (!provider.apiKey) {
       chatWindow.webContents.send('stream-chunk', {
         text: `你还没设置${provider.name}的API Key呢！请先在聊天窗口设置API Key~`,
@@ -104,7 +230,6 @@ function registerIpcHandlers() {
       return;
     }
 
-    const fileName = path.basename(filePath);
     const content = await readFileContent(filePath);
 
     if (content === null) {
@@ -256,14 +381,38 @@ function registerIpcHandlers() {
   /* ─── File Import & Drag-Drop ─── */
   ipcMain.handle('read-pending-files', async (_event, filePaths) => {
     const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB limit for images
     const results = [];
     for (const filePath of filePaths) {
       try {
         const fileName = path.basename(filePath);
+        // Skip Office temp files
+        if (fileName.startsWith('~$') || fileName.startsWith('.~') || fileName.startsWith('~')) {
+          continue;
+        }
         const ext = path.extname(filePath).toLowerCase();
 
         if (IMAGE_EXTS.includes(ext)) {
-          results.push({ fileName, content: `[这是一张图片: ${fileName}]`, error: null, isImage: true });
+          // Images — read as base64 for vision API support
+          try {
+            const stat = fs.statSync(filePath);
+            if (stat.size > MAX_IMAGE_SIZE) {
+              results.push({ fileName, content: `[图片过大: ${fileName} (${(stat.size / 1024 / 1024).toFixed(1)}MB，限制5MB)]`, error: '图片过大', isImage: true });
+              continue;
+            }
+            const imageBuffer = fs.readFileSync(filePath);
+            const mimeType = ext === '.svg' ? 'image/svg+xml' : `image/${ext.slice(1)}`;
+            results.push({
+              fileName,
+              content: `[这是一张图片: ${fileName}]`,
+              error: null,
+              isImage: true,
+              base64: imageBuffer.toString('base64'),
+              mimeType
+            });
+          } catch (err) {
+            results.push({ fileName, content: null, error: `读取图片失败: ${err.message}` });
+          }
           continue;
         }
 
@@ -287,6 +436,23 @@ function registerIpcHandlers() {
   ipcMain.handle('import-dropped-file', async (_event, filePath) => {
     try {
       const fileName = path.basename(filePath);
+      // Skip Office temp files
+      if (fileName.startsWith('~$') || fileName.startsWith('.~') || fileName.startsWith('~')) {
+        return { success: false, error: '临时文件已跳过' };
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+
+      // Images — just mark as imported, vision analysis will handle them via send-message
+      if (IMAGE_EXTS.includes(ext)) {
+        const { conv, convs } = getActiveConversation();
+        conv.messages.push({ role: 'user', content: `📷 拖入图片: ${fileName}` });
+        if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
+        conv.updatedAt = new Date().toISOString();
+        saveConversations(convs);
+        return { success: true, fileName, isImage: true };
+      }
+
       const content = await readFileContent(filePath);
 
       if (content === null) {
