@@ -5,6 +5,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 const Store = require('electron-store');
 const { themes, getTheme } = require('./themes');
+require('dotenv').config();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -83,6 +84,7 @@ const PRESET_PROVIDERS = [
     apiKey: '',
     apiBaseUrl: 'https://api.deepseek.com/chat/completions',
     modelName: 'deepseek-chat',
+    supportsVision: false,
     order: 0
   },
   {
@@ -92,7 +94,28 @@ const PRESET_PROVIDERS = [
     apiKey: '',
     apiBaseUrl: 'https://api.openai.com/v1/chat/completions',
     modelName: 'gpt-4o',
+    supportsVision: true,
     order: 1
+  },
+  {
+    id: 'siliconflow',
+    name: 'SiliconFlow (支持图片)',
+    type: 'preset',
+    apiKey: process.env.SILICONFLOW_API_KEY || '',
+    apiBaseUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+    modelName: 'Qwen/Qwen2-VL-72B-Instruct',
+    supportsVision: true,
+    order: 2
+  },
+  {
+    id: 'dashscope',
+    name: '通义千问 VL (阿里云)',
+    type: 'preset',
+    apiKey: '',
+    apiBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    modelName: 'qwen-vl-max',
+    supportsVision: true,
+    order: 3
   }
 ];
 
@@ -107,14 +130,42 @@ function saveModelProviders(providers) {
 function ensurePresetProviders() {
   let providers = getModelProviders();
   let changed = false;
+
   for (const preset of PRESET_PROVIDERS) {
-    if (!providers.find(p => p.id === preset.id)) {
+    const existing = providers.find(p => p.id === preset.id);
+    if (!existing) {
       providers.push({ ...preset });
       changed = true;
+    } else {
+      // Always sync code-defined fields for presets
+      if (existing.apiBaseUrl !== preset.apiBaseUrl) {
+        existing.apiBaseUrl = preset.apiBaseUrl;
+        changed = true;
+      }
+      if (existing.modelName !== preset.modelName) {
+        existing.modelName = preset.modelName;
+        changed = true;
+      }
+      if (existing.supportsVision !== preset.supportsVision) {
+        existing.supportsVision = preset.supportsVision;
+        changed = true;
+      }
+      // Auto-fill SiliconFlow API key from environment if not set
+      if (preset.id === 'siliconflow' && !existing.apiKey && preset.apiKey) {
+        existing.apiKey = preset.apiKey;
+        changed = true;
+      }
     }
   }
   if (changed) saveModelProviders(providers);
   return providers;
+}
+
+/** Check if a model name suggests vision support */
+function modelNameSupportsVision(modelName) {
+  if (!modelName) return false;
+  const name = modelName.toLowerCase();
+  return /vl|vision|visual|multimodal|internvl|qwen2-vl|gemini|gpt-4o|gpt-4\.1|claude-3\.5-sonnet|claude-3\.5-haiku|claude-opus/i.test(name);
 }
 
 function getActiveModelProvider() {
@@ -125,6 +176,10 @@ function getActiveModelProvider() {
   if (!provider) {
     provider = providers[0] || PRESET_PROVIDERS[0];
     store.set('activeModelProviderId', provider.id);
+  }
+  // Auto-detect vision support for custom models
+  if (provider.supportsVision === undefined) {
+    provider.supportsVision = modelNameSupportsVision(provider.modelName);
   }
   return provider;
 }
@@ -144,8 +199,8 @@ function createPetWindow() {
 
   const petWidth = 145;
   const petHeight = 170;
-  const x = savedPos != null ? savedPos.x : Math.round((screenWidth - petWidth) / 2);
-  const y = savedPos != null ? savedPos.y : Math.round((screenHeight - petHeight) / 2);
+  const x = savedPos != null ? savedPos.x : Math.round((screenWidth - petWidth) * 0.85);
+  const y = savedPos != null ? savedPos.y : Math.round((screenHeight - petHeight) * 0.2);
 
   petWindow = new BrowserWindow({
     width: petWidth,
@@ -157,8 +212,8 @@ function createPetWindow() {
     alwaysOnTop: true,
     resizable: false,
     hasShadow: false,
-    skipTaskbar: true,
-    type: 'panel',
+    skipTaskbar: false,
+    title: '🐱 桌宠',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -207,23 +262,32 @@ function createChatWindow() {
     e.preventDefault();
     hideChatWindow();
   });
-  chatWindow.on('blur', () => {
+  chatWindow.on('blur', async () => {
     if (Date.now() < ignoreBlurUntil) return;
-    // Don't hide on brief focus losses — check if cursor is near the window
-    if (chatWindow && !chatWindow.isDestroyed()) {
-      const bounds = chatWindow.getBounds();
-      const cursor = screen.getCursorScreenPoint();
-      if (cursor.x >= bounds.x - 50 && cursor.x <= bounds.x + bounds.width + 50 &&
-          cursor.y >= bounds.y - 50 && cursor.y <= bounds.y + bounds.height + 50) {
-        return; // Still interacting nearby — don't hide
-      }
-      // Short delay to avoid accidental hiding on quick focus switches
-      setTimeout(() => {
-        if (isChatVisible && chatWindow && !chatWindow.isDestroyed() && !chatWindow.isFocused()) {
-          hideChatWindow();
-        }
-      }, 300);
+    if (!chatWindow || chatWindow.isDestroyed()) return;
+
+    const { x: bx, y: by, width: bw, height: bh } = chatWindow.getBounds();
+    const cursor = screen.getCursorScreenPoint();
+    // Generous margin — don't hide if cursor could be reaching for the window
+    if (cursor.x >= bx - 150 && cursor.x <= bx + bw + 150 &&
+        cursor.y >= by - 150 && cursor.y <= by + bh + 150) {
+      return;
     }
+    // Check if textarea has content (user was typing) — never hide if so
+    try {
+      const hasText = await chatWindow.webContents.executeJavaScript(
+        '(document.getElementById("chatInput")?.value?.length || 0) > 0'
+      );
+      if (hasText) return;
+    } catch (_) { /* ignore */ }
+    // Longer delay — only hide if not refocused within 800ms
+    const hideTimeout = setTimeout(() => {
+      if (isChatVisible && chatWindow && !chatWindow.isDestroyed() && !chatWindow.isFocused()) {
+        hideChatWindow();
+      }
+    }, 800);
+    // Cancel hide if window regains focus
+    chatWindow.once('focus', () => clearTimeout(hideTimeout));
   });
   chatWindow.on('closed', () => { chatWindow = null; });
 }
@@ -246,9 +310,18 @@ function showChatWindow() {
 
   chatWindow.setBounds({ x: startX, y: chatY, width: chatWidth, height: chatHeight });
   chatWindow.show();
+  ignoreBlurUntil = Date.now() + 2500; // suppress blur for 2.5s after show — prevents accidental hide
+
+  // Focus the window and then the input
   chatWindow.focus();
-  chatWindow.webContents.send('focus-input');
-  ignoreBlurUntil = Date.now() + 400; // suppress blur for 400ms after show
+
+  // Focus input after a brief delay to ensure window is ready
+  setTimeout(() => {
+    if (chatWindow && !chatWindow.isDestroyed()) {
+      chatWindow.focus();
+      chatWindow.webContents.send('focus-input');
+    }
+  }, 50);
 
   const duration = 280;
   const startTime = Date.now();
@@ -264,6 +337,12 @@ function showChatWindow() {
     });
     if (progress < 1) {
       setTimeout(step, 10);
+    } else {
+      // Re-focus input after animation finishes — macOS sometimes loses focus during rapid bounds changes
+      try {
+        chatWindow.focus();
+        chatWindow.webContents.send('focus-input');
+      } catch (_) {}
     }
   };
   step();
@@ -687,6 +766,11 @@ function formatWeatherData(data) {
 
 /* ─── File reading ─── */
 async function readFileContent(filePath) {
+  const fileName = path.basename(filePath);
+  // Skip Office temp files
+  if (fileName.startsWith('~$') || fileName.startsWith('.~') || fileName.startsWith('~')) {
+    return null;
+  }
   const ext = path.extname(filePath).toLowerCase();
   try {
     switch (ext) {
@@ -700,9 +784,10 @@ async function readFileContent(filePath) {
       case '.yml':
         return fs.readFileSync(filePath, 'utf-8');
       case '.pdf': {
-        const pdfParse = require('pdf-parse');
+        const { PDFParse } = require('pdf-parse');
         const buffer = fs.readFileSync(filePath);
-        const data = await pdfParse(buffer);
+        const parser = new PDFParse({ data: buffer });
+        const data = await parser.getText();
         return data.text || '(PDF内容为空)';
       }
       case '.docx': {
@@ -1075,10 +1160,30 @@ async function executeToolCall(toolName, args) {
 }
 
 /* ─── IPC handlers ─── */
-ipcMain.handle('send-message', async (_event, message) => {
-  const provider = getActiveModelProvider();
+ipcMain.handle('send-message', async (_event, data) => {
+  let provider = getActiveModelProvider();
   if (!provider.apiKey) {
     return `你还没设置${provider.name}的API Key呢！请在右上角⚙️设置中输入API Key~`;
+  }
+
+  // Support both string (legacy) and {text, images} format
+  const message = typeof data === 'string' ? data : (data.text || '');
+  const images = typeof data === 'object' && Array.isArray(data.images) ? data.images : [];
+
+  // Auto-switch to vision-capable provider when images present
+  let visionSwitched = false;
+  if (images.length > 0 && !provider.supportsVision) {
+    const providers = getModelProviders();
+    const visionProvider = providers.find(p => p.supportsVision && p.apiKey);
+    if (visionProvider) {
+      const oldName = provider.name;
+      provider = visionProvider;
+      store.set('activeModelProviderId', visionProvider.id);
+      visionSwitched = true;
+      console.log(`🔄 检测到图片，自动切换到 ${visionProvider.name} (${visionProvider.modelName})`);
+    } else {
+      return `📷 检测到图片，但当前${provider.name}不支持图片分析，且没有找到配置了API Key的视觉模型。\n\n请在⚙️设置中添加 SiliconFlow 的 API Key（你已有 sk-b03a... 开头的 Key）或配置 OpenAI 的 Key。`;
+    }
   }
 
   const { conv, convs } = getActiveConversation();
@@ -1100,35 +1205,109 @@ ipcMain.handle('send-message', async (_event, message) => {
     }
   }
 
-  const messages = [buildSystemPrompt(searchContext), ...history, { role: 'user', content: message }];
+  // Build user message content — simple string or vision array
+  const userContent = images.length > 0
+    ? [
+        { type: 'text', text: message || '请分析以上图片' },
+        ...images.map(img => ({
+          type: 'image_url',
+          image_url: { url: `data:${img.mimeType};base64,${img.base64}` }
+        }))
+      ]
+    : message;
+
+  const messages = [buildSystemPrompt(searchContext), ...history, { role: 'user', content: userContent }];
   const recentHistory = messages.slice(-30);
 
   try {
     const reply = await callAIWithTools(recentHistory);
-    conv.messages.push({ role: 'user', content: message });
+    // Store simplified text version in conversation history
+    const displayText = images.length > 0
+      ? `📷 ${images.map(i => i.fileName).join(', ')}${message ? '\n\n' + message : ''}`
+      : message;
+    conv.messages.push({ role: 'user', content: displayText });
     conv.messages.push({ role: 'assistant', content: reply });
 
     if (conv.title === '新对话') {
-      const summary = await generateConversationTitle(message, reply);
-      conv.title = summary || message.slice(0, 20) + (message.length > 20 ? '...' : '');
+      const summary = await generateConversationTitle(displayText, reply);
+      conv.title = summary || (displayText ? displayText.slice(0, 20) + (displayText.length > 20 ? '...' : '') : '新对话');
     }
 
     conv.updatedAt = new Date().toISOString();
     if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
     saveConversations(convs);
-    return reply;
+    return visionSwitched
+      ? `🔀 已自动切换到 ${provider.name}（支持图片分析）\n\n${reply}`
+      : reply;
   } catch (err) {
-    return `出错了: ${err.message}`;
+    const providerName = visionSwitched ? provider.name : (getActiveModelProvider().name);
+    return `出错了 (${providerName}): ${err.message}\n\n请检查：\n1. API Key 是否正确\n2. 模型 "${provider.modelName}" 是否支持图片分析\n3. API 端点是否正确`;
   }
 });
 
 ipcMain.handle('analyze-file', async (_event, filePath) => {
-  const provider = getActiveModelProvider();
-  if (!provider.apiKey) {
-    return `你还没设置${provider.name}的API Key呢！请先在聊天窗口设置API Key~`;
+  const fileName = path.basename(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+  const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+  // Handle images with vision API
+  if (IMAGE_EXTS.includes(ext)) {
+    let provider = getActiveModelProvider();
+
+    // Auto-switch to vision-capable provider if current one doesn't support vision
+    if (!provider.supportsVision) {
+      const providers = getModelProviders();
+      const visionProvider = providers.find(p => p.supportsVision && p.apiKey);
+      if (visionProvider) {
+        provider = visionProvider;
+        store.set('activeModelProviderId', visionProvider.id);
+      } else {
+        return `📷 这是一张图片，但当前${provider.name}不支持图片分析呢~\n\n请在⚙️设置中选择 "OpenAI / ChatGPT" 或 "SiliconFlow (支持图片)" 并配置API Key，就能分析图片啦~`;
+      }
+    }
+
+    if (!provider.apiKey) {
+      return `你还没设置${provider.name}的API Key呢！请先在聊天窗口设置API Key~`;
+    }
+
+    const stat = fs.statSync(filePath);
+    if (stat.size > MAX_IMAGE_SIZE) {
+      return `图片太大啦 (${(stat.size / 1024 / 1024).toFixed(1)}MB)，我吃不下超过5MB的图片~ 压缩一下再给我吧 🥺`;
+    }
+    const imageBuffer = fs.readFileSync(filePath);
+    const mimeType = ext === '.svg' ? 'image/svg+xml' : `image/${ext.slice(1)}`;
+
+    const messages = [
+      buildSystemPrompt(),
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: `主人给你丢了一张图片"${fileName}"！请分析这张图片的内容，告诉主人这张图片是什么~` },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBuffer.toString('base64')}` } }
+        ]
+      }
+    ];
+
+    try {
+      const reply = await callAIWithTools(messages);
+      const { conv, convs } = getActiveConversation();
+      conv.messages.push({ role: 'user', content: `📷 拖入图片: ${fileName}` });
+      conv.messages.push({ role: 'assistant', content: reply });
+      if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
+      if (conv.title === '新对话') {
+        const summary = await generateConversationTitle(`用户导入图片: ${fileName}`, reply);
+        conv.title = summary || `图片分析: ${fileName}`;
+      }
+      conv.updatedAt = new Date().toISOString();
+      saveConversations(convs);
+      if (chatWindow) chatWindow.webContents.send('messages-updated');
+      return reply;
+    } catch (err) {
+      return `分析图片时出错了: ${err.message}`;
+    }
   }
 
-  const fileName = path.basename(filePath);
   const content = await readFileContent(filePath);
 
   if (content === null) {
@@ -1270,15 +1449,30 @@ ipcMain.handle('delete-conversation', (_event, id) => {
 
 ipcMain.handle('read-pending-files', async (_event, filePaths) => {
   const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB limit for images
   const results = [];
   for (const filePath of filePaths) {
     try {
       const fileName = path.basename(filePath);
       const ext = path.extname(filePath).toLowerCase();
 
-      // Images — no text content, mark as image type
+      // Images — read as base64 for vision API support
       if (IMAGE_EXTS.includes(ext)) {
-        results.push({ fileName, content: `[这是一张图片: ${fileName}]`, error: null, isImage: true });
+        const stat = fs.statSync(filePath);
+        if (stat.size > MAX_IMAGE_SIZE) {
+          results.push({ fileName, content: `[图片过大: ${fileName} (${(stat.size / 1024 / 1024).toFixed(1)}MB，限制5MB)]`, error: '图片过大', isImage: true });
+          continue;
+        }
+        const imageBuffer = fs.readFileSync(filePath);
+        const mimeType = ext === '.svg' ? 'image/svg+xml' : `image/${ext.slice(1)}`;
+        results.push({
+          fileName,
+          content: `[这是一张图片: ${fileName}]`,
+          error: null,
+          isImage: true,
+          base64: imageBuffer.toString('base64'),
+          mimeType
+        });
         continue;
       }
 

@@ -34,8 +34,8 @@ body {
   justify-content: space-between;
   padding: 14px 16px;
   background: var(--surface);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   -webkit-app-region: drag;
   border-bottom: 0.5px solid rgba(255,255,255,0.06);
   position: relative;
@@ -485,8 +485,8 @@ body.cyber .typing-dots span {
 .file-preview-area {
   padding: 8px 16px 0;
   background: var(--surface);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .file-preview-list {
   display: flex;
@@ -549,8 +549,6 @@ body.cyber .typing-dots span {
   gap: 8px;
   padding: 12px 16px;
   background: var(--surface);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
   border-top: 0.5px solid rgba(255,255,255,0.06);
 }
 .chat-input {

@@ -248,12 +248,21 @@ async function init() {
     }
   });
 
-  // Focus input listener
+  // Focus input listener — with retry for reliability
   window.petAPI.onFocusInput(() => {
-    chatInput.focus();
-    setTimeout(() => {
-      messagesArea.scrollTop = messagesArea.scrollHeight;
-    }, 100);
+    const tryFocus = (attempt = 0) => {
+      if (attempt > 5) return;
+      chatInput.focus({ preventScroll: false });
+      // Check if focus actually landed — retry if not
+      setTimeout(() => {
+        if (document.activeElement !== chatInput) {
+          tryFocus(attempt + 1);
+        } else {
+          messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+      }, attempt * 50 + 50);
+    };
+    tryFocus();
   });
 
   // Tool confirmation listener
@@ -422,6 +431,8 @@ function addMessage(role, content, animate = true) {
 }
 
 /* ─── Send message ─── */
+const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+
 async function sendMessage() {
   const text = chatInput.value.trim();
   if ((!text && pendingFiles.length === 0) || isLoading) return;
@@ -431,10 +442,16 @@ async function sendMessage() {
   sendBtn.disabled = true;
   isLoading = true;
 
-  // If there are pending files, read their content and prepend to message
+  // Separate images from text/files
+  const imageFiles = pendingFiles.filter(f => IMAGE_EXTS.includes(f.ext));
+  const textFiles = pendingFiles.filter(f => !IMAGE_EXTS.includes(f.ext));
+
+  // Build text context from non-image files
   let fullContent = text;
-  if (pendingFiles.length > 0) {
-    const filePaths = pendingFiles.map(f => f.filePath);
+  let imageData = [];
+
+  if (textFiles.length > 0) {
+    const filePaths = textFiles.map(f => f.filePath);
     const fileResults = await window.petAPI.readPendingFiles(filePaths);
 
     const fileContext = fileResults.map(r => {
@@ -442,13 +459,31 @@ async function sendMessage() {
       return `[文件: ${r.fileName}]\n${r.content}\n[${r.fileName} 结束]`;
     }).join('\n\n');
 
-    fullContent = `${fileContext}\n\n---\n用户指令: ${text}`;
-
-    // Clear pending files (they're now sent with the message)
-    clearPendingFiles();
+    fullContent = text ? `${fileContext}\n\n---\n用户指令: ${text}` : `${fileContext}\n\n---\n请分析以上文件`;
   }
 
-  addMessage('user', text || `📄 发送了 ${pendingFiles.length > 0 ? pendingFiles.length + ' 个文件' : ''}`);
+  // Read image files through the same IPC (returns base64 for images)
+  if (imageFiles.length > 0) {
+    const imagePaths = imageFiles.map(f => f.filePath);
+    const imageResults = await window.petAPI.readPendingFiles(imagePaths);
+    imageData = imageResults
+      .filter(r => r.isImage && r.base64)
+      .map(r => ({ base64: r.base64, mimeType: r.mimeType, fileName: r.fileName }));
+  }
+
+  // User display text
+  let displayText = text;
+  if (imageFiles.length > 0) {
+    const imgNames = imageFiles.map(f => f.fileName).join(', ');
+    displayText = `📷 ${imgNames}${text ? '\n\n' + text : ''}`;
+  } else if (textFiles.length > 0 && !text) {
+    displayText = `📄 发送了 ${textFiles.length} 个文件`;
+  }
+
+  // Clear pending files (they're now sent with the message)
+  clearPendingFiles();
+
+  addMessage('user', displayText);
   typingDots.classList.add('show');
   messagesArea.scrollTop = messagesArea.scrollHeight;
 
@@ -464,7 +499,7 @@ async function sendMessage() {
   }, 120000);
 
   try {
-    const reply = await window.petAPI.sendMessage(fullContent);
+    const reply = await window.petAPI.sendMessage(fullContent, imageData);
     clearTimeout(safetyTimer);
     typingDots.classList.remove('show');
     addMessage('assistant', reply);
@@ -570,19 +605,31 @@ hiddenFileInput.addEventListener('change', () => {
 /* ─── Drag & Drop files as pending chips ─── */
 const dropOverlay = document.getElementById('dropOverlay');
 let dropCounter = 0;
+let dropSafetyTimer = null;
+
+function resetDropState() {
+  dropCounter = 0;
+  dropOverlay.classList.remove('show');
+  if (dropSafetyTimer) {
+    clearTimeout(dropSafetyTimer);
+    dropSafetyTimer = null;
+  }
+}
 
 document.addEventListener('dragenter', (e) => {
   e.preventDefault();
   dropCounter++;
   if (dropCounter === 1) {
     dropOverlay.classList.add('show');
+    // Safety: auto-dismiss overlay after 5s in case dragleave/drop never fires
+    dropSafetyTimer = setTimeout(resetDropState, 5000);
   }
 });
 
 document.addEventListener('dragleave', (e) => {
-  dropCounter--;
+  dropCounter = Math.max(0, dropCounter - 1);
   if (dropCounter === 0) {
-    dropOverlay.classList.remove('show');
+    resetDropState();
   }
 });
 
@@ -592,8 +639,7 @@ document.addEventListener('dragover', (e) => {
 
 document.addEventListener('drop', async (e) => {
   e.preventDefault();
-  dropCounter = 0;
-  dropOverlay.classList.remove('show');
+  resetDropState();
 
   const files = e.dataTransfer.files;
   if (!files || files.length === 0) return;
@@ -885,8 +931,13 @@ chatInput.addEventListener('compositionend', () => {
 });
 
 chatInput.addEventListener('input', () => {
-  chatInput.style.height = 'auto';
-  chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+  // Debounce resize to avoid layout thrashing during fast typing
+  if (chatInput._resizeTimer) cancelAnimationFrame(chatInput._resizeTimer);
+  chatInput._resizeTimer = requestAnimationFrame(() => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+    chatInput._resizeTimer = null;
+  });
 });
 
 /* ─── Tool Confirmation ─── */

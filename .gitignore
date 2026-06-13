@@ -10,3 +10,4 @@ dist/
 __pycache__/
 *.pyc
 /tmp/pet_icon.iconset/
+.env
