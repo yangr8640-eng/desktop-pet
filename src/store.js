@@ -81,7 +81,28 @@ const PRESET_PROVIDERS = [
     apiKey: '',
     apiBaseUrl: 'https://api.openai.com/v1/chat/completions',
     modelName: 'gpt-4o',
+    supportsVision: true,
     order: 1
+  },
+  {
+    id: 'siliconflow',
+    name: 'SiliconFlow (支持图片)',
+    type: 'preset',
+    apiKey: '',
+    apiBaseUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+    modelName: 'Qwen/Qwen2-VL-72B-Instruct',
+    supportsVision: true,
+    order: 2
+  },
+  {
+    id: 'dashscope',
+    name: '通义千问 VL (阿里云)',
+    type: 'preset',
+    apiKey: '',
+    apiBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    modelName: 'qwen-vl-max',
+    supportsVision: true,
+    order: 3
   }
 ];
 
@@ -97,13 +118,27 @@ function ensurePresetProviders() {
   let providers = getModelProviders();
   let changed = false;
   for (const preset of PRESET_PROVIDERS) {
-    if (!providers.find(p => p.id === preset.id)) {
+    const existing = providers.find(p => p.id === preset.id);
+    if (!existing) {
       providers.push({ ...preset });
       changed = true;
+    } else if (existing.type === 'preset') {
+      // Sync code-defined fields for presets (e.g., supportsVision)
+      if (existing.supportsVision !== preset.supportsVision) {
+        existing.supportsVision = preset.supportsVision;
+        changed = true;
+      }
     }
   }
   if (changed) saveModelProviders(providers);
   return providers;
+}
+
+/** Check if a model name suggests vision support */
+function modelNameSupportsVision(modelName) {
+  if (!modelName) return false;
+  const name = modelName.toLowerCase();
+  return /vl|vision|visual|multimodal|internvl|qwen2-vl|gemini|gpt-4o|gpt-4\.1|claude-3\.5-sonnet|claude-3\.5-haiku|claude-opus/i.test(name);
 }
 
 function getActiveModelProvider() {
@@ -114,6 +149,10 @@ function getActiveModelProvider() {
   if (!provider) {
     provider = providers[0] || PRESET_PROVIDERS[0];
     store.set('activeModelProviderId', provider.id);
+  }
+  // Auto-detect vision support for custom models
+  if (provider.supportsVision === undefined) {
+    provider.supportsVision = modelNameSupportsVision(provider.modelName);
   }
   return provider;
 }
@@ -176,5 +215,6 @@ module.exports = {
   saveModelProviders,
   ensurePresetProviders,
   getActiveModelProvider,
+  modelNameSupportsVision,
   runMigrations
 };

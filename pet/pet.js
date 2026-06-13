@@ -236,7 +236,7 @@ const themeMessages = {
     dragHere: '> drop file here... 📂',
     eating: '> reading bytes...',
     analyzing: '> analyzing... 🔍'
-  }
+  },
 };
 
 let currentMessages = themeMessages.claude;

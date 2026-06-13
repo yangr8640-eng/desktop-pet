@@ -260,7 +260,9 @@ window.Chat = window.Chat || {};
     }
   };
 
-  /* ─── Send Message (with pending files support) ─── */
+  const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+
+  /* ─── Send Message (with pending files & image support) ─── */
   C.sendMessage = async function() {
     const chatInput = C.elements.chatInput;
     const text = chatInput.value.trim();
@@ -271,10 +273,16 @@ window.Chat = window.Chat || {};
     C.elements.sendBtn.disabled = true;
     C.state.isLoading = true;
 
-    // If there are pending files, read their content and prepend to message
+    // Separate images from text/files
+    const imageFiles = C.state.pendingFiles.filter(f => IMAGE_EXTS.includes(f.ext));
+    const textFiles = C.state.pendingFiles.filter(f => !IMAGE_EXTS.includes(f.ext));
+
+    // Build text context from non-image files
     let fullContent = text;
-    if (C.state.pendingFiles.length > 0) {
-      const filePaths = C.state.pendingFiles.map(f => f.filePath);
+    let imageData = [];
+
+    if (textFiles.length > 0) {
+      const filePaths = textFiles.map(f => f.filePath);
       const fileResults = await window.petAPI.readPendingFiles(filePaths);
 
       const fileContext = fileResults.map(r => {
@@ -282,15 +290,27 @@ window.Chat = window.Chat || {};
         return `[文件: ${r.fileName}]\n${r.content}\n[${r.fileName} 结束]`;
       }).join('\n\n');
 
-      fullContent = `${fileContext}\n\n---\n用户指令: ${text}`;
-
-      // Clear pending files
-      C.state.pendingFiles = [];
-      renderFilePreviews();
+      fullContent = text ? `${fileContext}\n\n---\n用户指令: ${text}` : `${fileContext}\n\n---\n请分析以上文件`;
     }
 
+    // Read image files through the same IPC (returns base64 for images)
+    if (imageFiles.length > 0) {
+      const imagePaths = imageFiles.map(f => f.filePath);
+      const imageResults = await window.petAPI.readPendingFiles(imagePaths);
+      imageData = imageResults.filter(r => r.isImage && r.base64).map(r => ({
+        base64: r.base64,
+        mimeType: r.mimeType,
+        fileName: r.fileName
+      }));
+    }
+
+    // Clear pending files
+    C.state.pendingFiles = [];
+    renderFilePreviews();
+
     C.startStreamingRequest(text || `📄 发送了文件`, true);
-    window.petAPI.sendMessage(fullContent);
+    // Send with images data as {text, images} format
+    window.petAPI.sendMessage(fullContent, imageData);
   };
 
   C.initInputHandlers = function() {
