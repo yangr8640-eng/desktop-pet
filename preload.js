@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('petAPI', {
   // Chat
-  sendMessage: (msg) => ipcRenderer.invoke('send-message', msg),
+  sendMessage: (text, images) => ipcRenderer.invoke('send-message', { text, images }),
   analyzeFile: (filePath) => ipcRenderer.invoke('analyze-file', filePath),
   getFilePath: (file) => webUtils.getPathForFile(file),
   getHistory: () => ipcRenderer.invoke('get-history'),
