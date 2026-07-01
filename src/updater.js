@@ -2,7 +2,6 @@ const { getChatWindow } = require('./windows');
 
 // Initialised by setupAutoUpdater() once app is ready
 let _isPackaged = false;
-
 let _autoUpdater = null;
 function getAutoUpdater() {
   if (!_autoUpdater) {
