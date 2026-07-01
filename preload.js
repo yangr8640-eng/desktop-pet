@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld('petAPI', {
   quitApp: () => ipcRenderer.send('quit-app'),
 
   // Auto update
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
   onUpdateEvent: (channel, cb) => {
