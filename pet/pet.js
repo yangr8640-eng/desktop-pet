@@ -1,9 +1,8 @@
-// pet.js - Desktop Pet Logic
+// pet.js - Desktop Pet Logic (Multi-Expression)
 
 const wrapper = document.getElementById('petWrapper');
 const bubble = document.getElementById('speechBubble');
-const petNormalImg = document.getElementById('petNormalImg');
-const petMouthOpenImg = document.getElementById('petMouthOpenImg');
+const petImg = document.getElementById('petImg');
 
 /* ─── State ─── */
 let isHovering = false;
@@ -14,29 +13,103 @@ let dragStartY = 0;
 let dragCounter = 0;
 let hoverTimeout = null;
 
+let currentExpression = 'normal';
+let currentTheme = null;
+let expressionCycleTimer = null;
+let lastInteractionTime = Date.now();
+
 /* ─── Prevent native image drag ─── */
-document.querySelectorAll('.pet-img').forEach(img => {
-  img.addEventListener('dragstart', (e) => e.preventDefault());
-});
+petImg.addEventListener('dragstart', (e) => e.preventDefault());
+
+/* ─── Expression Management ─── */
+function setExpression(name) {
+  if (!currentTheme) return;
+  const expr = currentTheme.expressions || currentTheme.svgs;
+  if (!expr[name]) return;
+
+  currentExpression = name;
+  petImg.src = expr[name];
+  updateBubblePosition(name);
+}
+
+function updateBubblePosition() {
+  if (!currentTheme) return;
+  if (currentTheme.id === 'warrior') {
+    bubble.style.top = '-12px';
+  } else if (currentTheme.id === 'claude') {
+    bubble.style.top = '-30px';
+  } else if (currentTheme.id === 'cherry') {
+    bubble.style.top = '-15px';
+  } else if (currentTheme.id === 'ganganji') {
+    bubble.style.top = '-15px';
+  } else {
+    bubble.style.top = '-12px';
+  }
+}
+
+/* ─── Idle Expression Cycling ─── */
+function startIdleCycling() {
+  stopIdleCycling();
+  const idleExprs = currentTheme?.idleExpressions;
+  if (!idleExprs || idleExprs.length <= 1) return;
+
+  expressionCycleTimer = setInterval(() => {
+    const now = Date.now();
+    const idleSeconds = (now - lastInteractionTime) / 1000;
+    const sleepAfter = currentTheme?.sleepAfterSeconds || 0;
+
+    if (sleepAfter > 0 && idleSeconds > sleepAfter) {
+      const expr = currentTheme.expressions || currentTheme.svgs;
+      if (expr['sleep'] && currentExpression !== 'sleep' && !wrapper.classList.contains('dragover')) {
+        setExpression('sleep');
+      }
+      return;
+    }
+
+    if (!isHovering && !wrapper.classList.contains('dragover')) {
+      const available = idleExprs.filter(e => e !== currentExpression);
+      if (available.length > 0) {
+        const next = available[Math.floor(Math.random() * available.length)];
+        setExpression(next);
+      }
+    }
+  }, 8000);
+}
+
+function stopIdleCycling() {
+  if (expressionCycleTimer) {
+    clearInterval(expressionCycleTimer);
+    expressionCycleTimer = null;
+  }
+}
 
 /* ─── Hover ─── */
 wrapper.addEventListener('mouseover', (e) => {
   if (isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = true;
+  lastInteractionTime = Date.now();
   wrapper.classList.add('greeting');
+
+  const expr = currentTheme?.expressions || currentTheme?.svgs;
+  if (expr && expr['happy'] && currentExpression !== 'mouthOpen') {
+    setExpression('happy');
+  }
   showBubble(currentMessages.greeting);
 
   clearTimeout(hoverTimeout);
   hoverTimeout = setTimeout(() => {
     wrapper.classList.remove('greeting');
     hideBubble();
+    if (currentExpression === 'happy') setExpression('normal');
   }, 1500);
 });
 
 wrapper.addEventListener('mouseout', (e) => {
   if (!isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = false;
+  lastInteractionTime = Date.now();
   hideBubble();
+  if (currentExpression === 'happy') setExpression('normal');
 });
 
 /* ─── Click vs Drag ─── */
@@ -45,6 +118,7 @@ wrapper.addEventListener('mousedown', (e) => {
   dragDistance = 0;
   dragStartX = e.screenX;
   dragStartY = e.screenY;
+  lastInteractionTime = Date.now();
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -62,12 +136,10 @@ document.addEventListener('mouseup', () => {
   isDragging = false;
 
   if (dragDistance < 5) {
-    // It was a click
     if (!wrapper.classList.contains('dragover')) {
       window.petAPI.openChat();
     }
   } else {
-    // It was a drag - save position
     window.petAPI.savePosition();
   }
 });
@@ -78,7 +150,7 @@ document.addEventListener('dragenter', (e) => {
   dragCounter++;
   if (dragCounter === 1) {
     wrapper.classList.add('dragover');
-    setMouthOpen(true);
+    setExpression('mouthOpen');
     showBubble(currentMessages.dragHere);
   }
 });
@@ -87,7 +159,7 @@ document.addEventListener('dragleave', (e) => {
   dragCounter--;
   if (dragCounter === 0) {
     wrapper.classList.remove('dragover');
-    setMouthOpen(false);
+    setExpression('normal');
     if (!isHovering) hideBubble();
   }
 });
@@ -100,22 +172,20 @@ document.addEventListener('drop', async (e) => {
   e.preventDefault();
   dragCounter = 0;
   wrapper.classList.remove('dragover');
-  setMouthOpen(false);
   hideBubble();
 
   const file = e.dataTransfer.files[0];
   if (!file) return;
+  if (currentExpression === 'mouthOpen') setExpression('normal');
 
   const filePath = window.petAPI.getFilePath(file);
   if (!filePath) return;
 
-  // Eating animation
-  setMouthOpen(true);
+  setExpression('mouthOpen');
   showBubble(currentMessages.eating);
   await sleep(400);
-  setMouthOpen(false);
+  setExpression('normal');
 
-  // Analyze
   showBubble(currentMessages.analyzing);
   try {
     await window.petAPI.analyzeFile(filePath);
@@ -126,17 +196,6 @@ document.addEventListener('drop', async (e) => {
     window.petAPI.showChat();
   }
 });
-
-/* ─── Mouth animation ─── */
-function setMouthOpen(open) {
-  if (open) {
-    petNormalImg.style.display = 'none';
-    petMouthOpenImg.style.display = 'block';
-  } else {
-    petNormalImg.style.display = 'block';
-    petMouthOpenImg.style.display = 'none';
-  }
-}
 
 /* ─── Speech bubble ─── */
 function showBubble(text) {
@@ -181,6 +240,20 @@ const themeMessages = {
     dragHere: '> drop file here... 📂',
     eating: '> reading bytes...',
     analyzing: '> analyzing... 🔍'
+  },
+  cherry: {
+    greeting: '안녕~ 🐰🍒',
+    idle: ['Biong~ 🐰', '好无聊呀~ 🍒', '主人去哪了呀？🌸', 'Cherry在这里~ ✨', '嘻嘻~ 🐰', '想吃樱桃了... 🍒'],
+    dragHere: '给Cherry看看~ 🐰👀',
+    eating: '嚼嚼嚼... 🍒🤤',
+    analyzing: 'Cherry分析中... 📄✨'
+  },
+  ganganji: {
+    greeting: '汪~ 🐶！',
+    idle: ['好无聊汪~ 🐾', '主人呢~ 汪？🧡', '想出去玩~ 🐶', '嘻嘻~ 🐶', 'Ganganji在这里~ ✨', '...🐾 汪！'],
+    dragHere: '给Ganganji康康~ 🐶👀',
+    eating: '嚼嚼嚼... 🐶🤤',
+    analyzing: 'Ganganji分析中... 📄🐶'
   }
 };
 
@@ -189,54 +262,78 @@ let currentThemeEmoji = '💠';
 
 /* ─── Theme ─── */
 function applyPetTheme(theme) {
-  petNormalImg.src = theme.svgs.normal;
-  petMouthOpenImg.src = theme.svgs.mouthOpen;
+  currentTheme = theme;
+
+  const expr = theme.expressions || theme.svgs;
+  const defaultExpr = expr.normal || Object.values(expr)[0];
+  if (defaultExpr) {
+    petImg.src = defaultExpr;
+  }
+
   currentThemeEmoji = theme.emoji;
   currentMessages = themeMessages[theme.id] || themeMessages.orange;
 
-  // Apply cyber/code bubble style
   if (theme.bubbleStyle === 'cyber') {
     bubble.classList.add('cyber');
   } else {
     bubble.classList.remove('cyber');
   }
 
-  // Warrior & Claude SVGs need explicit sizing + per-theme window resize
   if (theme.id === 'warrior') {
-    petNormalImg.style.width = '128px';
-    petNormalImg.style.height = '128px';
-    petMouthOpenImg.style.width = '128px';
-    petMouthOpenImg.style.height = '128px';
+    petImg.style.width = '128px';
+    petImg.style.height = '128px';
     bubble.style.top = '-12px';
     bubble.style.maxWidth = '';
     window.petAPI.resizePet(145, 170);
   } else if (theme.id === 'claude') {
-    petNormalImg.style.width = '85px';
-    petNormalImg.style.height = '85px';
-    petMouthOpenImg.style.width = '85px';
-    petMouthOpenImg.style.height = '85px';
+    petImg.style.width = '85px';
+    petImg.style.height = '85px';
     bubble.style.top = '-30px';
     bubble.style.maxWidth = '120px';
     window.petAPI.resizePet(140, 170);
+  } else if (theme.id === 'cherry') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
+  } else if (theme.id === 'ganganji') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
   } else {
-    petNormalImg.style.width = '';
-    petNormalImg.style.height = '';
-    petMouthOpenImg.style.width = '';
-    petMouthOpenImg.style.height = '';
+    petImg.style.width = '';
+    petImg.style.height = '';
     bubble.style.top = '-12px';
     bubble.style.maxWidth = '';
     window.petAPI.resizePet(145, 170);
   }
+
+  currentExpression = 'normal';
+  startIdleCycling();
 }
 
-window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
+window.petAPI.onThemeChanged((theme) => {
+  applyPetTheme(theme);
+  // Sync desktop shortcut icon
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
+});
 
 (async () => {
   const theme = await window.petAPI.getTheme();
   applyPetTheme(theme);
+  // Sync desktop shortcut icon on startup
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
 })();
 
-const idleInterval = setInterval(() => {
+/* ─── Idle speech bubble cycling ─── */
+setInterval(() => {
   if (!isHovering && !wrapper.classList.contains('dragover') && !bubble.classList.contains('show')) {
     const msgs = currentMessages.idle;
     const msg = msgs[Math.floor(Math.random() * msgs.length)];
@@ -245,8 +342,19 @@ const idleInterval = setInterval(() => {
       if (!isHovering) hideBubble();
     }, 2500);
   }
-}, 30000); // Every 30 seconds
+}, 30000);
 
-window.addEventListener('beforeunload', () => {
-  clearInterval(idleInterval);
-});
+/* ─── Expose expression API for chat ─── */
+window.setPetExpression = function(name) {
+  if (currentTheme) {
+    const expr = currentTheme.expressions || currentTheme.svgs;
+    if (expr[name]) {
+      setExpression(name);
+      if (name !== 'normal' && name !== 'mouthOpen') {
+        setTimeout(() => {
+          if (currentExpression === name) setExpression('normal');
+        }, 3000);
+      }
+    }
+  }
+};

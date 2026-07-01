@@ -1,6 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 
+const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB limit
+
 async function readFileContent(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   try {
@@ -34,4 +37,28 @@ async function readFileContent(filePath) {
   }
 }
 
-module.exports = { readFileContent };
+/** Read an image file and return base64 data with mime type */
+function readImageFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const stat = fs.statSync(filePath);
+  if (stat.size > MAX_IMAGE_SIZE) {
+    return { error: '图片过大', isImage: true, fileName: path.basename(filePath) };
+  }
+  const imageBuffer = fs.readFileSync(filePath);
+  const mimeType = ext === '.svg' ? 'image/svg+xml' : `image/${ext.slice(1)}`;
+  return {
+    fileName: path.basename(filePath),
+    content: `[这是一张图片: ${path.basename(filePath)}]`,
+    error: null,
+    isImage: true,
+    base64: imageBuffer.toString('base64'),
+    mimeType
+  };
+}
+
+function isImageFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return IMAGE_EXTS.includes(ext);
+}
+
+module.exports = { readFileContent, readImageFile, isImageFile, IMAGE_EXTS };

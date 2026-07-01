@@ -26,6 +26,12 @@
         </div>
       </div>
       <div class="header-right">
+        <div class="expression-bar" id="expressionBar" style="display:none;">
+          <button class="expr-btn" data-expr="normal" title="默认">😐</button>
+          <button class="expr-btn" data-expr="shocked" title="震惊">😱</button>
+          <button class="expr-btn" data-expr="mouthOpen" title="张嘴">😮</button>
+        </div>
+        <button class="header-btn" id="historyBtn" title="历史记录">📋</button>
         <button class="header-btn" id="searchHeaderBtn" title="联网搜索：关">🌐</button>
         <button class="header-btn" id="settingsBtn" title="设置">⚙️</button>
         <button class="header-btn" id="newChatBtn" title="开启新对话">💬</button>
@@ -94,6 +100,8 @@
             <option value="yellow">💛 小奶娃</option>
             <option value="warrior">⚔️ 极限战士</option>
             <option value="claude">💠 Claude</option>
+            <option value="cherry">🍒 Cherry</option>
+            <option value="ganganji">🐶 Ganganji</option>
           </select>
         </div>
         <div class="settings-divider"></div>
@@ -111,6 +119,18 @@
         </div>
         <p class="settings-hint">API Key存储在本地，不会上传到任何第三方</p>
       </div>
+    </div>
+
+    <!-- History panel -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header">
+        <span class="history-title">📋 历史记录</span>
+        <button class="history-close" id="historyCloseBtn">✕</button>
+      </div>
+      <div class="history-search">
+        <input type="text" class="history-search-input" id="historySearchInput" placeholder="搜索对话...">
+      </div>
+      <div class="history-list" id="historyList"></div>
     </div>
 
     <!-- Update banner -->
@@ -137,10 +157,15 @@
       </div>
     </div>
 
+    <!-- File preview chips (above input) -->
+    <div class="file-preview-area" id="filePreviewArea" style="display:none;">
+      <div class="file-preview-list" id="filePreviewList"></div>
+    </div>
+
     <!-- Input area -->
     <div class="input-area">
       <textarea class="chat-input" id="chatInput" placeholder="跟Claude说点什么..." rows="1"></textarea>
-      <button class="import-btn" id="importBtn" title="导入文档">📎</button>
+      <button class="import-btn" id="importBtn" title="导入文件">📎</button>
       <button class="send-btn" id="sendBtn" title="发送">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -153,7 +178,33 @@
     <div class="resize-handle resize-right" data-resize="e"></div>
     <div class="resize-handle resize-bottom" data-resize="s"></div>
     <div class="resize-handle resize-corner" data-resize="se"></div>
+
+    <!-- Tool confirmation overlay -->
+    <div class="tool-confirm-overlay" id="toolConfirmOverlay" style="display:none;">
+      <div class="tool-confirm-dialog">
+        <div class="tool-confirm-header">🔧 AI 想执行以下操作</div>
+        <div class="tool-confirm-toolname" id="confirmToolName"></div>
+        <div class="tool-confirm-params" id="confirmToolParams"></div>
+        <div class="tool-confirm-actions">
+          <button class="tool-confirm-btn tool-confirm-deny" id="confirmDenyBtn">拒绝</button>
+          <button class="tool-confirm-btn tool-confirm-allow" id="confirmAllowBtn">允许</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Hidden file input for 📎 button -->
+  <input type="file" id="hiddenFileInput" multiple accept=".pdf,.docx,.txt,.md,.json,.csv,.log,.xml,.yaml,.yml,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg" style="display:none;">
+
+  <!-- Drop zone overlay -->
+  <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-content">
+      <div class="drop-icon">📄</div>
+      <div class="drop-text">拖放文件到这里</div>
+      <div class="drop-sub">支持文档、图片等多种格式，可一次拖入多个</div>
+    </div>
+  </div>
+
   <script src="../node_modules/marked/marked.min.js"></script>
   <script src="chat-core.js"></script>
   <script src="chat-messages.js"></script>
