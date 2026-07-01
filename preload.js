@@ -65,6 +65,10 @@ contextBridge.exposeInMainWorld('petAPI', {
   // Expression (multi-expression support)
   setPetExpression: (name) => ipcRenderer.send('set-expression', name),
 
+  // Desktop shortcut icon sync
+  syncDesktopIcon: (themeId) => ipcRenderer.send('sync-desktop-icon', themeId),
+  onSyncDesktopIcon: (cb) => ipcRenderer.on('sync-desktop-icon', (_event, themeId) => cb(themeId)),
+
   // Platform
   getPlatform: () => ipcRenderer.invoke('get-platform'),
 

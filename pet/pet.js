@@ -38,6 +38,10 @@ function updateBubblePosition() {
     bubble.style.top = '-12px';
   } else if (currentTheme.id === 'claude') {
     bubble.style.top = '-30px';
+  } else if (currentTheme.id === 'cherry') {
+    bubble.style.top = '-15px';
+  } else if (currentTheme.id === 'ganganji') {
+    bubble.style.top = '-15px';
   } else {
     bubble.style.top = '-12px';
   }
@@ -237,6 +241,20 @@ const themeMessages = {
     eating: '> reading bytes...',
     analyzing: '> analyzing... 🔍'
   },
+  cherry: {
+    greeting: '안녕~ 🐰🍒',
+    idle: ['Biong~ 🐰', '好无聊呀~ 🍒', '主人去哪了呀？🌸', 'Cherry在这里~ ✨', '嘻嘻~ 🐰', '想吃樱桃了... 🍒'],
+    dragHere: '给Cherry看看~ 🐰👀',
+    eating: '嚼嚼嚼... 🍒🤤',
+    analyzing: 'Cherry分析中... 📄✨'
+  },
+  ganganji: {
+    greeting: '汪~ 🐶！',
+    idle: ['好无聊汪~ 🐾', '主人呢~ 汪？🧡', '想出去玩~ 🐶', '嘻嘻~ 🐶', 'Ganganji在这里~ ✨', '...🐾 汪！'],
+    dragHere: '给Ganganji康康~ 🐶👀',
+    eating: '嚼嚼嚼... 🐶🤤',
+    analyzing: 'Ganganji分析中... 📄🐶'
+  }
 };
 
 let currentMessages = themeMessages.claude;
@@ -273,6 +291,18 @@ function applyPetTheme(theme) {
     bubble.style.top = '-30px';
     bubble.style.maxWidth = '120px';
     window.petAPI.resizePet(140, 170);
+  } else if (theme.id === 'cherry') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
+  } else if (theme.id === 'ganganji') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
   } else {
     petImg.style.width = '';
     petImg.style.height = '';
@@ -285,11 +315,21 @@ function applyPetTheme(theme) {
   startIdleCycling();
 }
 
-window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
+window.petAPI.onThemeChanged((theme) => {
+  applyPetTheme(theme);
+  // Sync desktop shortcut icon
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
+});
 
 (async () => {
   const theme = await window.petAPI.getTheme();
   applyPetTheme(theme);
+  // Sync desktop shortcut icon on startup
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
 })();
 
 /* ─── Idle speech bubble cycling ─── */
