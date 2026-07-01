@@ -697,6 +697,8 @@ function registerIpcHandlers() {
     const chatWindow = getChatWindow();
     if (petWindow) petWindow.webContents.send('theme-changed', theme);
     if (chatWindow) chatWindow.webContents.send('theme-changed', theme);
+    // Sync desktop shortcut icon
+    if (petWindow) petWindow.webContents.send('sync-desktop-icon', themeId);
     return true;
   });
 

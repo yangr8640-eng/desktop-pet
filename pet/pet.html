@@ -49,14 +49,13 @@
     .pet-wrapper.greeting { animation: greetBounce 0.7s ease-in-out; }
     .pet-wrapper.dragover { animation: none; transform: scale(1.05); }
 
-    /* Pet images */
+    /* Pet image (single dynamic SVG for multi-expression support) */
     .pet-img {
       width: 128px;
       height: auto;
       display: block;
       image-rendering: auto;
     }
-    #petMouthOpenImg { display: none; }
 
     /* Speech bubble */
     .speech-bubble {
@@ -114,8 +113,7 @@
     <div class="pet-wrapper" id="petWrapper">
       <div class="speech-bubble" id="speechBubble">嗨~ 💛</div>
       <div class="cat-interactive">
-        <img src="themes/claude/normal.svg" class="pet-img" id="petNormalImg" alt="pet" draggable="false" />
-        <img src="themes/claude/mouthopen.svg" class="pet-img" id="petMouthOpenImg" alt="pet open mouth" draggable="false" />
+        <img src="themes/claude/normal.svg" class="pet-img" id="petImg" alt="pet" draggable="false" />
       </div>
     </div>
   </div>
