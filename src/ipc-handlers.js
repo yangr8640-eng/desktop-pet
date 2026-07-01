@@ -419,13 +419,17 @@ function registerIpcHandlers() {
   });
 
   /* ─── Auto Update ─── */
-  const { downloadUpdate, quitAndInstall } = require('./updater');
+  const { downloadUpdate, quitAndInstall, checkForUpdatesNow } = require('./updater');
   ipcMain.handle('download-update', async () => {
     downloadUpdate();
     return true;
   });
   ipcMain.handle('quit-and-install', async () => {
     quitAndInstall();
+    return true;
+  });
+  ipcMain.handle('check-for-updates', async () => {
+    checkForUpdatesNow();
     return true;
   });
 
