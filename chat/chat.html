@@ -18,7 +18,11 @@
             <span class="dropdown-toggle-text">新对话</span>
             <span class="dropdown-arrow">▾</span>
           </button>
-          <div class="dropdown-list" id="dropdownList" style="display:none;"></div>
+          <div class="dropdown-list" id="dropdownList" style="display:none;">
+            <div class="dropdown-search-container">
+              <input type="text" class="dropdown-search" id="dropdownSearch" placeholder="搜索对话..." autocomplete="off">
+            </div>
+          </div>
         </div>
       </div>
       <div class="header-right">
@@ -79,6 +83,15 @@
             </label>
           </div>
         </div>
+        <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-row-label">开机自启</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoLaunchToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
         <div class="settings-divider"></div>
         <div class="settings-section">
           <label class="settings-label">宠物外观</label>
@@ -87,6 +100,8 @@
             <option value="yellow">💛 小奶娃</option>
             <option value="warrior">⚔️ 极限战士</option>
             <option value="claude">💠 Claude</option>
+            <option value="cherry">🍒 Cherry</option>
+            <option value="ganganji">🐶 Ganganji</option>
           </select>
         </div>
         <div class="settings-divider"></div>
@@ -94,6 +109,10 @@
           <label class="settings-label">个性化语气</label>
           <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
           <button class="settings-save" id="savePersonalityBtn">保存</button>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <button class="settings-save settings-save-outline" id="exportSettingsBtn">📥 导出当前对话为 Markdown</button>
         </div>
         <p class="settings-hint">API Key存储在本地，不会上传到任何第三方</p>
       </div>
@@ -111,6 +130,21 @@
       <div class="history-list" id="historyList"></div>
     </div>
 
+    <!-- Update banner -->
+    <div class="update-banner" id="updateBanner" style="display:none;">
+      <span class="update-banner-text" id="updateBannerText"></span>
+      <div class="update-banner-actions">
+        <button class="update-banner-btn" id="updateBannerBtn"></button>
+        <button class="update-banner-dismiss" id="updateBannerDismiss">✕</button>
+      </div>
+    </div>
+
+    <!-- Global search overlay -->
+    <div class="global-search-overlay" id="globalSearchOverlay">
+      <input type="text" class="global-search-input" id="globalSearchInput" placeholder="搜索所有对话内容... (Ctrl+F)" autocomplete="off">
+      <div class="global-search-results" id="globalSearchResults"></div>
+    </div>
+
     <!-- Messages -->
     <div class="messages-area" id="messagesArea">
       <div class="welcome-msg">
@@ -120,10 +154,12 @@
       </div>
     </div>
 
-    <!-- Input area -->
+    <!-- File preview chips (above input) -->
     <div class="file-preview-area" id="filePreviewArea" style="display:none;">
       <div class="file-preview-list" id="filePreviewList"></div>
     </div>
+
+    <!-- Input area -->
     <div class="input-area">
       <textarea class="chat-input" id="chatInput" placeholder="跟Claude说点什么..." rows="1"></textarea>
       <button class="import-btn" id="importBtn" title="导入文件">📎</button>
@@ -153,6 +189,7 @@
       </div>
     </div>
   </div>
+
   <!-- Hidden file input for 📎 button -->
   <input type="file" id="hiddenFileInput" multiple accept=".pdf,.docx,.txt,.md,.json,.csv,.log,.xml,.yaml,.yml,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg" style="display:none;">
 
@@ -164,6 +201,15 @@
       <div class="drop-sub">支持文档、图片等多种格式，可一次拖入多个</div>
     </div>
   </div>
+
+  <script src="../node_modules/marked/marked.min.js"></script>
+  <script src="chat-core.js"></script>
+  <script src="chat-messages.js"></script>
+  <script src="chat-conversations.js"></script>
+  <script src="chat-search.js"></script>
+  <script src="chat-stream.js"></script>
+  <script src="chat-settings.js"></script>
+  <script src="chat-updater.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>

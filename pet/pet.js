@@ -14,9 +14,7 @@ let dragCounter = 0;
 let hoverTimeout = null;
 
 let currentExpression = 'normal';
-let prevExpression = 'normal';
 let currentTheme = null;
-let idleTimer = null;
 let expressionCycleTimer = null;
 let lastInteractionTime = Date.now();
 
@@ -27,22 +25,23 @@ petImg.addEventListener('dragstart', (e) => e.preventDefault());
 function setExpression(name) {
   if (!currentTheme) return;
   const expr = currentTheme.expressions || currentTheme.svgs;
-  if (!expr[name]) return; // expression not available
+  if (!expr[name]) return;
 
-  prevExpression = currentExpression;
   currentExpression = name;
   petImg.src = expr[name];
-
-  // Update bubble position based on theme config
   updateBubblePosition(name);
 }
 
-function updateBubblePosition(exprName) {
+function updateBubblePosition() {
   if (!currentTheme) return;
   if (currentTheme.id === 'warrior') {
     bubble.style.top = '-12px';
   } else if (currentTheme.id === 'claude') {
     bubble.style.top = '-30px';
+  } else if (currentTheme.id === 'cherry') {
+    bubble.style.top = '-15px';
+  } else if (currentTheme.id === 'ganganji') {
+    bubble.style.top = '-15px';
   } else {
     bubble.style.top = '-12px';
   }
@@ -59,7 +58,6 @@ function startIdleCycling() {
     const idleSeconds = (now - lastInteractionTime) / 1000;
     const sleepAfter = currentTheme?.sleepAfterSeconds || 0;
 
-    // Check if we should switch to sleep
     if (sleepAfter > 0 && idleSeconds > sleepAfter) {
       const expr = currentTheme.expressions || currentTheme.svgs;
       if (expr['sleep'] && currentExpression !== 'sleep' && !wrapper.classList.contains('dragover')) {
@@ -68,7 +66,6 @@ function startIdleCycling() {
       return;
     }
 
-    // Cycle through idle expressions
     if (!isHovering && !wrapper.classList.contains('dragover')) {
       const available = idleExprs.filter(e => e !== currentExpression);
       if (available.length > 0) {
@@ -76,7 +73,7 @@ function startIdleCycling() {
         setExpression(next);
       }
     }
-  }, 8000); // every 8 seconds
+  }, 8000);
 }
 
 function stopIdleCycling() {
@@ -86,18 +83,13 @@ function stopIdleCycling() {
   }
 }
 
-function recordInteraction() {
-  lastInteractionTime = Date.now();
-}
-
 /* ─── Hover ─── */
 wrapper.addEventListener('mouseover', (e) => {
   if (isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = true;
-  recordInteraction();
+  lastInteractionTime = Date.now();
   wrapper.classList.add('greeting');
 
-  // Try happy expression, fall back to normal
   const expr = currentTheme?.expressions || currentTheme?.svgs;
   if (expr && expr['happy'] && currentExpression !== 'mouthOpen') {
     setExpression('happy');
@@ -108,20 +100,16 @@ wrapper.addEventListener('mouseover', (e) => {
   hoverTimeout = setTimeout(() => {
     wrapper.classList.remove('greeting');
     hideBubble();
-    if (currentExpression === 'happy') {
-      setExpression('normal');
-    }
+    if (currentExpression === 'happy') setExpression('normal');
   }, 1500);
 });
 
 wrapper.addEventListener('mouseout', (e) => {
   if (!isHovering || wrapper.contains(e.relatedTarget)) return;
   isHovering = false;
-  recordInteraction();
+  lastInteractionTime = Date.now();
   hideBubble();
-  if (currentExpression === 'happy') {
-    setExpression('normal');
-  }
+  if (currentExpression === 'happy') setExpression('normal');
 });
 
 /* ─── Click vs Drag ─── */
@@ -130,7 +118,7 @@ wrapper.addEventListener('mousedown', (e) => {
   dragDistance = 0;
   dragStartX = e.screenX;
   dragStartY = e.screenY;
-  recordInteraction();
+  lastInteractionTime = Date.now();
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -193,13 +181,11 @@ document.addEventListener('drop', async (e) => {
   const filePath = window.petAPI.getFilePath(file);
   if (!filePath) return;
 
-  // Eating animation
   setExpression('mouthOpen');
   showBubble(currentMessages.eating);
   await sleep(400);
   setExpression('normal');
 
-  // Analyze
   showBubble(currentMessages.analyzing);
   try {
     await window.petAPI.analyzeFile(filePath);
@@ -254,6 +240,20 @@ const themeMessages = {
     dragHere: '> drop file here... 📂',
     eating: '> reading bytes...',
     analyzing: '> analyzing... 🔍'
+  },
+  cherry: {
+    greeting: '안녕~ 🐰🍒',
+    idle: ['Biong~ 🐰', '好无聊呀~ 🍒', '主人去哪了呀？🌸', 'Cherry在这里~ ✨', '嘻嘻~ 🐰', '想吃樱桃了... 🍒'],
+    dragHere: '给Cherry看看~ 🐰👀',
+    eating: '嚼嚼嚼... 🍒🤤',
+    analyzing: 'Cherry分析中... 📄✨'
+  },
+  ganganji: {
+    greeting: '汪~ 🐶！',
+    idle: ['好无聊汪~ 🐾', '主人呢~ 汪？🧡', '想出去玩~ 🐶', '嘻嘻~ 🐶', 'Ganganji在这里~ ✨', '...🐾 汪！'],
+    dragHere: '给Ganganji康康~ 🐶👀',
+    eating: '嚼嚼嚼... 🐶🤤',
+    analyzing: 'Ganganji分析中... 📄🐶'
   }
 };
 
@@ -264,7 +264,6 @@ let currentThemeEmoji = '💠';
 function applyPetTheme(theme) {
   currentTheme = theme;
 
-  // Use expressions if available, fall back to svgs
   const expr = theme.expressions || theme.svgs;
   const defaultExpr = expr.normal || Object.values(expr)[0];
   if (defaultExpr) {
@@ -274,14 +273,12 @@ function applyPetTheme(theme) {
   currentThemeEmoji = theme.emoji;
   currentMessages = themeMessages[theme.id] || themeMessages.orange;
 
-  // Apply cyber/code bubble style
   if (theme.bubbleStyle === 'cyber') {
     bubble.classList.add('cyber');
   } else {
     bubble.classList.remove('cyber');
   }
 
-  // Per-theme sizing
   if (theme.id === 'warrior') {
     petImg.style.width = '128px';
     petImg.style.height = '128px';
@@ -294,6 +291,18 @@ function applyPetTheme(theme) {
     bubble.style.top = '-30px';
     bubble.style.maxWidth = '120px';
     window.petAPI.resizePet(140, 170);
+  } else if (theme.id === 'cherry') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
+  } else if (theme.id === 'ganganji') {
+    petImg.style.width = '120px';
+    petImg.style.height = '120px';
+    bubble.style.top = '-15px';
+    bubble.style.maxWidth = '140px';
+    window.petAPI.resizePet(155, 155);
   } else {
     petImg.style.width = '';
     petImg.style.height = '';
@@ -306,11 +315,21 @@ function applyPetTheme(theme) {
   startIdleCycling();
 }
 
-window.petAPI.onThemeChanged((theme) => applyPetTheme(theme));
+window.petAPI.onThemeChanged((theme) => {
+  applyPetTheme(theme);
+  // Sync desktop shortcut icon
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
+});
 
 (async () => {
   const theme = await window.petAPI.getTheme();
   applyPetTheme(theme);
+  // Sync desktop shortcut icon on startup
+  if (window.petAPI.syncDesktopIcon) {
+    window.petAPI.syncDesktopIcon(theme.id);
+  }
 })();
 
 /* ─── Idle speech bubble cycling ─── */
@@ -331,7 +350,6 @@ window.setPetExpression = function(name) {
     const expr = currentTheme.expressions || currentTheme.svgs;
     if (expr[name]) {
       setExpression(name);
-      // Auto-revert to normal after 3 seconds for non-persistent expressions
       if (name !== 'normal' && name !== 'mouthOpen') {
         setTimeout(() => {
           if (currentExpression === name) setExpression('normal');

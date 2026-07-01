@@ -2,8 +2,13 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('petAPI', {
   // Chat
-  sendMessage: (text, images) => ipcRenderer.invoke('send-message', { text, images }),
-  analyzeFile: (filePath) => ipcRenderer.invoke('analyze-file', filePath),
+  sendMessage: (text, images) => ipcRenderer.send('send-message', { text, images }),
+  analyzeFile: (filePath) => ipcRenderer.send('analyze-file', filePath),
+  onStreamChunk: (cb) => {
+    const handler = (_event, data) => cb(data);
+    ipcRenderer.on('stream-chunk', handler);
+    return () => ipcRenderer.removeListener('stream-chunk', handler);
+  },
   getFilePath: (file) => webUtils.getPathForFile(file),
   getHistory: () => ipcRenderer.invoke('get-history'),
 
@@ -21,6 +26,17 @@ contextBridge.exposeInMainWorld('petAPI', {
   importDroppedFile: (filePath) => ipcRenderer.invoke('import-dropped-file', filePath),
   readPendingFiles: (filePaths) => ipcRenderer.invoke('read-pending-files', filePaths),
 
+  // Export
+  exportConversation: () => ipcRenderer.invoke('export-conversation'),
+
+  // Message operations
+  regenerateMessage: () => ipcRenderer.send('regenerate-message'),
+  trimConversation: (messageIndex) => ipcRenderer.invoke('trim-conversation', messageIndex),
+  cancelRequest: () => ipcRenderer.send('cancel-request'),
+
+  // Cross-conversation search
+  searchAllConversations: (query) => ipcRenderer.invoke('search-all-conversations', query),
+
   // Model Providers
   getModelProviders: () => ipcRenderer.invoke('get-model-providers'),
   saveModelProvider: (provider) => ipcRenderer.invoke('save-model-provider', provider),
@@ -32,6 +48,10 @@ contextBridge.exposeInMainWorld('petAPI', {
   // Search toggle
   toggleSearch: () => ipcRenderer.invoke('toggle-search'),
   getSearchEnabled: () => ipcRenderer.invoke('get-search-enabled'),
+
+  // Auto-launch toggle
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
 
   // Personality
   savePersonality: (text) => ipcRenderer.invoke('save-personality', text),
@@ -45,6 +65,13 @@ contextBridge.exposeInMainWorld('petAPI', {
   // Expression (multi-expression support)
   setPetExpression: (name) => ipcRenderer.send('set-expression', name),
 
+  // Desktop shortcut icon sync
+  syncDesktopIcon: (themeId) => ipcRenderer.send('sync-desktop-icon', themeId),
+  onSyncDesktopIcon: (cb) => ipcRenderer.on('sync-desktop-icon', (_event, themeId) => cb(themeId)),
+
+  // Platform
+  getPlatform: () => ipcRenderer.invoke('get-platform'),
+
   // Window controls
   resizeWindow: (width, height) => ipcRenderer.send('resize-window', width, height),
   resizePet: (width, height) => ipcRenderer.send('resize-pet', width, height),
@@ -55,6 +82,15 @@ contextBridge.exposeInMainWorld('petAPI', {
   savePosition: (pos) => ipcRenderer.send('save-position', pos),
   minimizeChat: () => ipcRenderer.send('minimize-chat'),
   quitApp: () => ipcRenderer.send('quit-app'),
+
+  // Auto update
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  onUpdateEvent: (channel, cb) => {
+    const handler = (_event, data) => cb(data);
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.removeListener(channel, handler);
+  },
 
   // Listen for events from main
   onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb()),

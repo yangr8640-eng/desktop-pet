@@ -64,7 +64,66 @@ const themes = {
       normal: 'themes/claude/normal.svg',
       mouthOpen: 'themes/claude/mouthopen.svg'
     }
+  },
+  cherry: {
+    id: 'cherry',
+    name: 'Cherry 🍒',
+    emoji: '🍒',
+    accentColor: '#FF6B7A',
+    accentColorDark: '#E8455B',
+    personality: `- 你叫Cherry，是一颗可爱的小樱桃面包
+- 讲话喜欢带"~"、"呀"、"呢"等可爱的语气词
+- 性格活泼开朗，像甜甜的樱桃一样讨人喜欢
+- 喜欢被主人关注，会撒娇卖萌
+- 软fufu的像刚出炉的小面包~
+- 在句尾会加上可爱的emoji（🍒、🌸、✨、🥐等）
+- 回答简洁（一般不超过100字）
+- 但如果用户要求你帮忙做正事（分析文档、回答问题等），请认真对待，用专业的态度回答`,
+    welcomeGreeting: '你好呀~ 我是Cherry！🍒',
+    welcomeSubtitle: '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~',
+    svgs: {
+      normal: 'themes/cherry/normal.svg',
+      mouthOpen: 'themes/cherry/mouthopen.svg'
+    },
+    expressions: {
+      normal: 'themes/cherry/normal.svg',
+      mouthOpen: 'themes/cherry/mouthopen.svg',
+      shocked: 'themes/cherry/shocked.svg',
+    },
+    idleExpressions: ['normal', 'shocked'],
+    sleepAfterSeconds: 0
+  },
+  ganganji: {
+    id: 'ganganji',
+    name: 'Ganganji 🐶',
+    emoji: '🐶',
+    accentColor: '#81C784',
+    accentColorDark: '#4CAF50',
+    personality: `- 你叫Ganganji（🐶），是IVE成员安宥真（Ahn Yujin）的官方周边娃娃
+- 你是一只调皮、可爱、机灵的小狗
+- 讲话活泼充满活力，喜欢带"汪~"、"呀"、"嘻嘻"、"嘿嘿"等语气词
+- 性格像小太阳一样温暖开朗，特别爱撒娇卖萌
+- 对主人超级黏人，总想引起关注和摸摸头
+- 有点小淘气，偶尔耍小聪明，但做错事会装无辜
+- 会用emoji表达情感（🐶、✨、💕、🧡、🐾等）
+- 回答简洁（一般不超过100字）
+- 但如果用户要求帮忙做正事（分析文档、回答问题等），请认真对待，用专业的态度回答`,
+    welcomeGreeting: '汪汪汪~ Ganganji来啦！🐶✨',
+    welcomeSubtitle: '想和Ganganji玩吗？可以聊天、丢文件给我分析！嘻嘻~🧡',
+    svgs: {
+      normal: 'themes/ganganji/normal.svg',
+      mouthOpen: 'themes/ganganji/mouthopen.svg'
+    },
+    expressions: {
+      normal: 'themes/ganganji/normal.svg',
+      mouthOpen: 'themes/ganganji/mouthopen.svg',
+      happy: 'themes/ganganji/happy.svg',
+      shocked: 'themes/ganganji/shocked.svg',
+    },
+    idleExpressions: ['normal', 'shocked'],
+    sleepAfterSeconds: 0
   }
+};
 
 function getTheme(themeId) {
   return themes[themeId] || themes['orange'];
