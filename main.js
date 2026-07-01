@@ -1,6 +1,7 @@
 const { app, Tray, Menu, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { store, runMigrations } = require('./src/store');
 const { createPetWindow, createChatWindow, getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./src/windows');
 const { registerIpcHandlers } = require('./src/ipc-handlers');
@@ -107,7 +108,7 @@ app.whenReady().then(() => {
   createChatWindow();
   createTray();
   registerGlobalShortcuts();
-  setupAutoUpdater();
+  setupAutoUpdater(app.isPackaged);
 
   app.setLoginItemSettings({
     openAtLogin: store.get('autoLaunch', true),

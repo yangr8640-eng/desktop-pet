@@ -1,6 +1,8 @@
 const { getChatWindow } = require('./windows');
 
-const isDev = !require('electron').app.isPackaged;
+// Initialised by setupAutoUpdater() once app is ready
+let _isPackaged = false;
+
 let _autoUpdater = null;
 function getAutoUpdater() {
   if (!_autoUpdater) {
@@ -16,11 +18,13 @@ function getAutoUpdater() {
 // Track whether the current check was user-initiated (manual)
 let _manualCheck = false;
 
-function setupAutoUpdater() {
+function setupAutoUpdater(isPackaged) {
+  _isPackaged = !!isPackaged;
+
   const autoUpdater = getAutoUpdater();
 
   autoUpdater.on('checking-for-update', () => {
-    if (isDev && !_manualCheck) return;
+    if (!_isPackaged && !_manualCheck) return;
     sendToChat('update-checking');
   });
 
@@ -52,7 +56,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     _manualCheck = false;
-    if (isDev) {
+    if (!_isPackaged) {
       console.warn('[auto-updater]', err.message);
     }
     sendToChat('update-error', { message: err.message });
