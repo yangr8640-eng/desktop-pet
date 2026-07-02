@@ -17,8 +17,8 @@ const themes = {
     welcomeGreeting: '你好呀~ 我是小橘！',
     welcomeSubtitle: '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~',
     svgs: {
-      normal: 'themes/orange/normal.svg',
-      mouthOpen: 'themes/orange/mouthopen.svg'
+      normal: 'themes/orange/orange-cat.png',
+      mouthOpen: 'themes/orange/orange-cat.png'
     }
   },
   yellow: {
