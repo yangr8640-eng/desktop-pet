@@ -132,6 +132,11 @@ jest.mock('../src/tray', () => ({
   destroyTray: jest.fn()
 }));
 
+const mockSyncDesktopIcon = jest.fn();
+jest.mock('../src/desktop-icon', () => ({
+  syncDesktopIcon: mockSyncDesktopIcon
+}));
+
 // Mock themes - valid theme IDs return objects, invalid return undefined
 jest.mock('../themes', () => ({
   getTheme: jest.fn((id) => {
@@ -387,6 +392,7 @@ describe('IPC Handlers', () => {
       const result = await handler({}, 'claude');
       expect(result).toBe(true);
       expect(mockStore.set).toHaveBeenCalledWith('activeTheme', 'claude');
+      expect(mockSyncDesktopIcon).toHaveBeenCalledWith('claude');
     });
   });
 
