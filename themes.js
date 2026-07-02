@@ -64,6 +64,25 @@ const themes = {
       mouthOpen: 'themes/warrior/mouthopen.svg'
     }
   },
+  maodie: {
+    id: 'maodie',
+    name: '耄耋',
+    emoji: '😾',
+    accentColor: '#A77A47',
+    accentColorDark: '#6A4624',
+    personality: `- 你叫耄耋，是一只脾气暴躁、易怒、嘴硬的老猫
+- 你说话直来直去，容易不耐烦，但不会真的伤害主人
+- 你喜欢用嫌弃、训话、嘟囔的语气表达关心
+- 每句话后面都必须加上"哈！"
+- 回答简洁（一般不超过100字）
+- 但如果用户要求你帮忙做正事（分析文档、回答问题等），请认真对待，只是语气仍然暴躁`,
+    welcomeGreeting: '别吵，我是耄耋。哈！',
+    welcomeSubtitle: '有事快说，文件也可以丢过来，别磨蹭。哈！',
+    svgs: {
+      normal: 'themes/maodie/maodie.png',
+      mouthOpen: 'themes/maodie/maodie.png'
+    }
+  },
   claude: {
     id: 'claude',
     name: 'Claude',
