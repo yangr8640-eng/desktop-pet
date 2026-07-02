@@ -1,62 +1,139 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Tail curling from right side -->
-  <path d="M 148 132 Q 180 120 182 95 Q 184 72 165 68" fill="none" stroke="#E8782A" stroke-width="7" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Orange tabby desktop pet">
+  <defs>
+    <linearGradient id="headFur" x1="58" y1="24" x2="144" y2="126" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD47A"/>
+      <stop offset="0.48" stop-color="#FF9F3F"/>
+      <stop offset="1" stop-color="#E46B22"/>
+    </linearGradient>
+    <linearGradient id="bodyFur" x1="56" y1="96" x2="145" y2="181" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFC46A"/>
+      <stop offset="0.58" stop-color="#FF9839"/>
+      <stop offset="1" stop-color="#D85E1D"/>
+    </linearGradient>
+    <linearGradient id="tailFur" x1="137" y1="62" x2="183" y2="139" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD075"/>
+      <stop offset="0.5" stop-color="#F18A2D"/>
+      <stop offset="1" stop-color="#C95317"/>
+    </linearGradient>
+    <radialGradient id="muzzleCream" cx="50%" cy="35%" r="65%">
+      <stop offset="0" stop-color="#FFF1CF"/>
+      <stop offset="1" stop-color="#FFD49B"/>
+    </radialGradient>
+    <linearGradient id="earInner" x1="62" y1="22" x2="82" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFB6A0"/>
+      <stop offset="1" stop-color="#FFD29A"/>
+    </linearGradient>
+    <filter id="softShadow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#5A2D11" flood-opacity="0.22"/>
+    </filter>
+  </defs>
 
-  <!-- Body -->
-  <ellipse cx="100" cy="138" rx="44" ry="36" fill="#FFB347"/>
-  <!-- Belly highlight -->
-  <ellipse cx="100" cy="142" rx="28" ry="22" fill="#FFD08A"/>
+  <ellipse cx="101" cy="181" rx="51" ry="9" fill="#4C2A12" opacity="0.13"/>
 
-  <!-- Left paw -->
-  <ellipse cx="72" cy="168" rx="13" ry="9" fill="#FFB347"/>
-  <ellipse cx="72" cy="166" rx="9" ry="5.5" fill="#FFDFB3"/>
+  <g filter="url(#softShadow)">
+    <!-- Curling tail with tabby rings -->
+    <path d="M139 139 C162 138 178 123 179 104 C181 82 165 66 149 75 C137 82 139 102 154 107 C164 110 171 103 167 94"
+          fill="none" stroke="url(#tailFur)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="none" stroke="#B94B18" stroke-width="3.5" stroke-linecap="round" opacity="0.72">
+      <path d="M153 134 C159 131 164 126 167 121"/>
+      <path d="M172 112 C174 106 174 100 171 95"/>
+      <path d="M158 75 C153 78 150 82 149 87"/>
+      <path d="M146 96 C150 101 155 103 161 102"/>
+    </g>
 
-  <!-- Right paw -->
-  <ellipse cx="128" cy="168" rx="13" ry="9" fill="#FFB347"/>
-  <ellipse cx="128" cy="166" rx="9" ry="5.5" fill="#FFDFB3"/>
+    <!-- Body -->
+    <path d="M57 140 C57 113 74 94 100 94 C126 94 143 114 144 141 C145 166 126 177 100 177 C74 177 56 165 57 140Z"
+          fill="url(#bodyFur)" stroke="#C65B1E" stroke-width="2"/>
+    <path d="M74 142 C74 123 85 111 100 111 C115 111 126 124 126 143 C126 160 115 170 100 170 C85 170 74 160 74 142Z"
+          fill="url(#muzzleCream)" opacity="0.92"/>
+    <g fill="none" stroke="#C85D1B" stroke-width="3" stroke-linecap="round" opacity="0.62">
+      <path d="M65 125 C74 120 82 120 88 124"/>
+      <path d="M136 125 C127 120 119 120 113 124"/>
+      <path d="M66 141 C75 137 82 137 88 140"/>
+      <path d="M135 141 C126 137 119 137 112 140"/>
+    </g>
 
-  <!-- Head -->
-  <circle cx="100" cy="82" r="40" fill="#FFB347"/>
+    <!-- Ears behind the head -->
+    <path d="M66 58 L53 24 C51 18 57 15 62 19 L88 44 Z"
+          fill="url(#headFur)" stroke="#C65B1E" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M134 58 L147 24 C149 18 143 15 138 19 L112 44 Z"
+          fill="url(#headFur)" stroke="#C65B1E" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M68 51 L59 27 L81 44 Z" fill="url(#earInner)" opacity="0.95"/>
+    <path d="M132 51 L141 27 L119 44 Z" fill="url(#earInner)" opacity="0.95"/>
+    <g fill="none" stroke="#B94B18" stroke-width="2.6" stroke-linecap="round" opacity="0.65">
+      <path d="M61 28 L70 47"/>
+      <path d="M139 28 L130 47"/>
+    </g>
 
-  <!-- Left ear -->
-  <polygon points="64,52 48,14 82,38" fill="#FFB347"/>
-  <polygon points="66,48 55,22 78,40" fill="#FFD08A"/>
+    <!-- Head and face -->
+    <path d="M60 82 C60 56 77 40 100 40 C124 40 141 56 141 82 C141 108 121 125 100 125 C78 125 60 108 60 82Z"
+          fill="url(#headFur)" stroke="#C65B1E" stroke-width="2"/>
+    <path d="M78 89 C78 74 88 66 100 66 C112 66 122 74 122 89 C122 105 112 113 100 113 C88 113 78 105 78 89Z"
+          fill="url(#muzzleCream)" opacity="0.94"/>
 
-  <!-- Right ear -->
-  <polygon points="136,52 152,14 118,38" fill="#FFB347"/>
-  <polygon points="134,48 145,22 122,40" fill="#FFD08A"/>
+    <!-- Forehead and cheek tabby marks -->
+    <g fill="none" stroke="#9E4318" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.7">
+      <path d="M87 53 C91 61 95 61 100 54 C105 61 109 61 113 53"/>
+      <path d="M93 49 C95 54 97 56 100 58"/>
+      <path d="M107 49 C105 54 103 56 100 58"/>
+      <path d="M66 78 C73 76 78 73 82 69"/>
+      <path d="M67 91 C74 89 79 87 83 84"/>
+      <path d="M134 78 C127 76 122 73 118 69"/>
+      <path d="M133 91 C126 89 121 87 117 84"/>
+    </g>
 
-  <!-- Face lighter area -->
-  <ellipse cx="100" cy="88" rx="26" ry="20" fill="#FFD08A"/>
+    <!-- Eyes -->
+    <path d="M77 78 C82 71 94 71 99 79 C94 86 82 86 77 78Z"
+          fill="#FFF8E8" stroke="#573019" stroke-width="1.4"/>
+    <path d="M101 79 C106 71 118 71 123 78 C118 86 106 86 101 79Z"
+          fill="#FFF8E8" stroke="#573019" stroke-width="1.4"/>
+    <circle cx="88" cy="79" r="5.7" fill="#62B779"/>
+    <circle cx="112" cy="79" r="5.7" fill="#62B779"/>
+    <ellipse cx="89" cy="79" rx="2.5" ry="5" fill="#20341D"/>
+    <ellipse cx="113" cy="79" rx="2.5" ry="5" fill="#20341D"/>
+    <circle cx="85.8" cy="75.8" r="1.9" fill="#FFFFFF"/>
+    <circle cx="109.8" cy="75.8" r="1.9" fill="#FFFFFF"/>
+    <path d="M77 72 C83 68 93 68 99 72" fill="none" stroke="#7E3618" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+    <path d="M101 72 C107 68 117 68 123 72" fill="none" stroke="#7E3618" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
 
-  <!-- Left eye -->
-  <circle cx="86" cy="78" r="7" fill="#3D2B1F"/>
-  <circle cx="84" cy="75" r="2.8" fill="white"/>
-  <circle cx="88" cy="80" r="1.3" fill="white"/>
+    <!-- Muzzle, nose, smile, whiskers -->
+    <ellipse cx="91" cy="97" rx="13" ry="10" fill="#FFE2AE" opacity="0.95"/>
+    <ellipse cx="109" cy="97" rx="13" ry="10" fill="#FFE2AE" opacity="0.95"/>
+    <path d="M94 91 C98 88 102 88 106 91 C104 96 96 96 94 91Z" fill="#EA6D61"/>
+    <path d="M100 96 L100 101" fill="none" stroke="#55301D" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M100 102 C95 107 89 106 87 101" fill="none" stroke="#55301D" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M100 102 C105 107 111 106 113 101" fill="none" stroke="#55301D" stroke-width="1.8" stroke-linecap="round"/>
+    <g fill="#8E4D25" opacity="0.65">
+      <circle cx="84" cy="95" r="1.2"/>
+      <circle cx="88" cy="100" r="1.1"/>
+      <circle cx="116" cy="95" r="1.2"/>
+      <circle cx="112" cy="100" r="1.1"/>
+    </g>
+    <g fill="none" stroke="#74401F" stroke-width="1.35" stroke-linecap="round" opacity="0.78">
+      <path d="M76 94 C63 89 53 87 43 88"/>
+      <path d="M76 100 C62 100 52 102 43 106"/>
+      <path d="M124 94 C137 89 147 87 157 88"/>
+      <path d="M124 100 C138 100 148 102 157 106"/>
+    </g>
 
-  <!-- Right eye -->
-  <circle cx="114" cy="78" r="7" fill="#3D2B1F"/>
-  <circle cx="112" cy="75" r="2.8" fill="white"/>
-  <circle cx="116" cy="80" r="1.3" fill="white"/>
+    <!-- Collar and bell -->
+    <path d="M74 113 C90 122 110 122 126 113" fill="none" stroke="#2B9A9A" stroke-width="5.5" stroke-linecap="round"/>
+    <circle cx="100" cy="120" r="5.5" fill="#FFD15B" stroke="#A86611" stroke-width="1.4"/>
+    <path d="M96 119 H104" stroke="#A86611" stroke-width="1.2" stroke-linecap="round"/>
+    <circle cx="100" cy="123" r="1.2" fill="#A86611"/>
 
-  <!-- Nose -->
-  <polygon points="96,88 104,88 100,93" fill="#FF7B6C"/>
-
-  <!-- Mouth - w shape cat smile -->
-  <path d="M 90 95 Q 95 92 100 96 Q 105 92 110 95"
-        fill="none" stroke="#3D2B1F" stroke-width="1.5" stroke-linecap="round"/>
-
-  <!-- Whiskers left -->
-  <g stroke="#E8A45A" stroke-width="1.2" stroke-linecap="round">
-    <line x1="70" y1="86" x2="52" y2="82"/>
-    <line x1="70" y1="90" x2="52" y2="90"/>
-    <line x1="70" y1="94" x2="52" y2="98"/>
-  </g>
-
-  <!-- Whiskers right -->
-  <g stroke="#E8A45A" stroke-width="1.2" stroke-linecap="round">
-    <line x1="130" y1="86" x2="148" y2="82"/>
-    <line x1="130" y1="90" x2="148" y2="90"/>
-    <line x1="130" y1="94" x2="148" y2="98"/>
+    <!-- Paws with tiny pads -->
+    <ellipse cx="75" cy="165" rx="16" ry="10" fill="#F68C31" stroke="#C65B1E" stroke-width="1.4"/>
+    <ellipse cx="125" cy="165" rx="16" ry="10" fill="#F68C31" stroke="#C65B1E" stroke-width="1.4"/>
+    <g fill="#FFDCAE" opacity="0.95">
+      <ellipse cx="75" cy="166" rx="6.5" ry="3.8"/>
+      <circle cx="68" cy="163" r="2"/>
+      <circle cx="75" cy="161.8" r="2"/>
+      <circle cx="82" cy="163" r="2"/>
+      <ellipse cx="125" cy="166" rx="6.5" ry="3.8"/>
+      <circle cx="118" cy="163" r="2"/>
+      <circle cx="125" cy="161.8" r="2"/>
+      <circle cx="132" cy="163" r="2"/>
+    </g>
   </g>
 </svg>
