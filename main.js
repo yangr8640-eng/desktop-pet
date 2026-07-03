@@ -1,14 +1,11 @@
 const { app, Tray, Menu, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
-const fs = require('fs');
-const os = require('os');
 const { store, runMigrations } = require('./src/store');
 const { createPetWindow, createChatWindow, getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow } = require('./src/windows');
 const { registerIpcHandlers } = require('./src/ipc-handlers');
 const { setupAutoUpdater } = require('./src/updater');
 const { getTray, setTray, destroyTray } = require('./src/tray');
-const { getTheme } = require('./themes');
-const { execSync } = require('child_process');
+const { syncDesktopIcon } = require('./src/desktop-icon');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -82,22 +79,6 @@ ipcMain.on('update-tray-icon', (_event, theme) => {
   updateTrayIcon(theme);
 });
 
-/* ─── Desktop shortcut icon sync (macOS) ─── */
-const SHORTCUT_APP_PATH = path.join(os.homedir(), 'Desktop', '桌宠.app');
-
-function syncDesktopIcon(themeId) {
-  if (process.platform !== 'darwin') return; // macOS only
-  const iconPath = path.join(__dirname, 'assets', `icon_${themeId}.icns`);
-  const appIconPath = path.join(SHORTCUT_APP_PATH, 'Contents', 'Resources', 'icon.icns');
-  try {
-    if (fs.existsSync(iconPath) && fs.existsSync(SHORTCUT_APP_PATH)) {
-      fs.copyFileSync(iconPath, appIconPath);
-      execSync(`touch "${SHORTCUT_APP_PATH}"`, { stdio: 'ignore' });
-      execSync(`osascript -e 'tell application "Finder" to update item POSIX file "${SHORTCUT_APP_PATH}"' 2>/dev/null`, { stdio: 'ignore' });
-    }
-  } catch (_) { /* silently ignore */ }
-}
-
 ipcMain.on('sync-desktop-icon', (_event, themeId) => {
   syncDesktopIcon(themeId);
 });
@@ -109,6 +90,7 @@ app.whenReady().then(() => {
   createTray();
   registerGlobalShortcuts();
   setupAutoUpdater(app.isPackaged);
+  syncDesktopIcon(store.get('activeTheme') || 'claude');
 
   app.setLoginItemSettings({
     openAtLogin: store.get('autoLaunch', true),
