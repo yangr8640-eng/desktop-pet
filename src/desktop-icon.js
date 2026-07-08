@@ -119,16 +119,29 @@ function collectWindowsShortcuts() {
   const shortcuts = new Set();
 
   for (const root of getWindowsShortcutRoots()) {
+    // 1. Known shortcut names
     for (const shortcutName of WINDOWS_SHORTCUT_NAMES) {
       shortcuts.add(path.join(root, shortcutName));
     }
 
+    // 2. Scan for any .lnk containing "pet" (case-insensitive)
     try {
       for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+        if (entry.isFile() && entry.name.toLowerCase().includes('pet') && entry.name.endsWith('.lnk')) {
+          shortcuts.add(path.join(root, entry.name));
+        }
         if (entry.isDirectory()) {
           for (const shortcutName of WINDOWS_SHORTCUT_NAMES) {
             shortcuts.add(path.join(root, entry.name, shortcutName));
           }
+          // Also scan subdirectories for pet-related shortcuts
+          try {
+            for (const subEntry of fs.readdirSync(path.join(root, entry.name), { withFileTypes: true })) {
+              if (subEntry.isFile() && subEntry.name.toLowerCase().includes('pet') && subEntry.name.endsWith('.lnk')) {
+                shortcuts.add(path.join(root, entry.name, subEntry.name));
+              }
+            }
+          } catch { /* ignore */ }
         }
       }
     } catch { /* shortcut root may not exist */ }
