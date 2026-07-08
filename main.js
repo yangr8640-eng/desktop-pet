@@ -89,7 +89,7 @@ app.whenReady().then(() => {
   createChatWindow();
   createTray();
   registerGlobalShortcuts();
-  setupAutoUpdater();
+  setupAutoUpdater(app.isPackaged);
   syncDesktopIcon(store.get('activeTheme') || 'claude');
 
   app.setLoginItemSettings({

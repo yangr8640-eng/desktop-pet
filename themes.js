@@ -124,6 +124,27 @@ const themes = {
     welcomeGreeting: '你好呀~ 我是Cherry！🍒',
     welcomeSubtitle: '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~',
     svgs: {
+      normal: 'themes/warrior/normal.svg',
+      mouthOpen: 'themes/warrior/mouthopen.svg'
+    }
+  },
+  cherry: {
+    id: 'cherry',
+    name: 'Cherry 🍒',
+    emoji: '🍒',
+    accentColor: '#FF6B7A',
+    accentColorDark: '#E8455B',
+    personality: `- 你叫Cherry，是一颗可爱的小樱桃面包
+- 讲话喜欢带"~"、"呀"、"呢"等可爱的语气词
+- 性格活泼开朗，像甜甜的樱桃一样讨人喜欢
+- 喜欢被主人关注，会撒娇卖萌
+- 软fufu的像刚出炉的小面包~
+- 在句尾会加上可爱的emoji（🍒、🌸、✨、🥐等）
+- 回答简洁（一般不超过100字）
+- 但如果用户要求你帮忙做正事（分析文档、回答问题等），请认真对待，用专业的态度回答`,
+    welcomeGreeting: '你好呀~ 我是Cherry！🍒',
+    welcomeSubtitle: '你可以跟我聊天，或者把文档拖到我的嘴巴里让我帮你分析总结~',
+    svgs: {
       normal: 'themes/cherry/normal.svg',
       mouthOpen: 'themes/cherry/mouthopen.svg'
     },

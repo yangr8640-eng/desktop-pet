@@ -8,7 +8,6 @@ const { readFileContent } = require('./file-reader');
 const { getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWindow, setQuitting } = require('./windows');
 const { getTheme } = require('../themes');
 const { destroyTray } = require('./tray');
-const { syncDesktopIcon } = require('./desktop-icon');
 
 function registerIpcHandlers() {
 
@@ -643,13 +642,17 @@ function registerIpcHandlers() {
   });
 
   /* ─── Auto Update ─── */
-  const { downloadUpdate, quitAndInstall } = require('./updater');
+  const { downloadUpdate, quitAndInstall, checkForUpdatesNow } = require('./updater');
   ipcMain.handle('download-update', async () => {
     downloadUpdate();
     return true;
   });
   ipcMain.handle('quit-and-install', async () => {
     quitAndInstall();
+    return true;
+  });
+  ipcMain.handle('check-for-updates', async () => {
+    checkForUpdatesNow();
     return true;
   });
 
@@ -694,11 +697,12 @@ function registerIpcHandlers() {
     const theme = getTheme(themeId);
     if (!theme) return false;
     store.set('activeTheme', themeId);
-    syncDesktopIcon(themeId);
     const petWindow = getPetWindow();
     const chatWindow = getChatWindow();
     if (petWindow) petWindow.webContents.send('theme-changed', theme);
     if (chatWindow) chatWindow.webContents.send('theme-changed', theme);
+    // Sync desktop shortcut icon
+    if (petWindow) petWindow.webContents.send('sync-desktop-icon', themeId);
     return true;
   });
 

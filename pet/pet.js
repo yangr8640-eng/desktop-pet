@@ -40,8 +40,6 @@ function updateBubblePosition() {
     bubble.style.top = '-30px';
   } else if (currentTheme.id === 'cherry') {
     bubble.style.top = '-15px';
-  } else if (currentTheme.id === 'maodie') {
-    bubble.style.top = '-18px';
   } else if (currentTheme.id === 'ganganji') {
     bubble.style.top = '-15px';
   } else {
@@ -306,12 +304,6 @@ function applyPetTheme(theme) {
     bubble.style.top = '-15px';
     bubble.style.maxWidth = '140px';
     window.petAPI.resizePet(155, 155);
-  } else if (theme.id === 'maodie') {
-    petImg.style.width = '128px';
-    petImg.style.height = '128px';
-    bubble.style.top = '-18px';
-    bubble.style.maxWidth = '140px';
-    window.petAPI.resizePet(160, 160);
   } else if (theme.id === 'ganganji') {
     petImg.style.width = '120px';
     petImg.style.height = '120px';

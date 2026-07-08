@@ -1,0 +1,29 @@
+VERIFICATION — DesktopPet Chocolatey Package
+
+## Download
+
+The installer is downloaded from the official GitHub Releases page:
+  https://github.com/yangr8640-eng/desktop-pet/releases
+
+### Architecture-specific URLs
+
+  x64:   https://github.com/yangr8640-eng/desktop-pet/releases/download/v<version>/DesktopPet-Setup-<version>.exe
+  ARM64: https://github.com/yangr8640-eng/desktop-pet/releases/download/v<version>/DesktopPet-Setup-<version>-arm64.exe
+
+## Checksum Verification
+
+SHA256 checksums can be found in the GitHub Release body for each release,
+or computed from the downloaded installer using:
+
+  certutil -hashfile DesktopPet-Setup-<version>.exe SHA256
+
+## Code Signing
+
+The installer is currently NOT code-signed. This is a known limitation.
+The binaries are built directly from the open-source code at:
+  https://github.com/yangr8640-eng/desktop-pet
+
+## License
+
+MIT License — see legal/LICENSE.txt or:
+  https://github.com/yangr8640-eng/desktop-pet/blob/windows/LICENSE
