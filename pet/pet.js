@@ -234,6 +234,13 @@ const themeMessages = {
     eating: '接收情报中...',
     analyzing: '战略分析中... 📜'
   },
+  maodie: {
+    greeting: '干嘛，快说。哈！',
+    idle: ['别戳我。哈！', '有事快讲。哈！', '烦死了。哈！', '我在听。哈！', '别磨蹭。哈！', '哼。哈！'],
+    dragHere: '东西拿来，我看看。哈！',
+    eating: '别催，嚼着呢。哈！',
+    analyzing: '我在分析，安静点。哈！'
+  },
   claude: {
     greeting: '> Hello, world. 💠',
     idle: ['> idle...', '> listening...', '> ready for input.', '> thinking... 🤔', '> compiling thoughts...', '> awaiting prompt.'],

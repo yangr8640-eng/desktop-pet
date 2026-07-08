@@ -182,3 +182,12 @@ if result.returncode == 0:
     print(f"Generated icon.icns at {icns_dst}")
 else:
     print(f"Warning: iconutil failed (non-macOS or missing tool): {result.stderr}")
+
+# Generate Windows .ico for electron-builder.
+ico_dst = os.path.join(ASSETS_DIR, 'icon.ico')
+img.save(
+    ico_dst,
+    format='ICO',
+    sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+)
+print(f"Generated icon.ico at {ico_dst}")
