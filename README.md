@@ -41,6 +41,12 @@ brew install --cask desktoppet
 
 安装后桌宠会出现在 `/Applications/DesktopPet.app`，双击运行即可。
 
+### 直接下载 DMG
+
+从 [Releases](https://github.com/yangr8640-eng/desktop-pet/releases) 页面下载最新版 `DesktopPet-x.x.x-arm64.dmg`，双击挂载后拖拽 `DesktopPet.app` 到 Applications 文件夹即可。
+
+> 🖥️ 仅支持 **Apple Silicon**（M1/M2/M3/M4）Mac。Intel Mac 用户请使用下方源码安装方式。
+
 ### 源码安装 / From Source
 
 ```bash
