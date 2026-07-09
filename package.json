@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI desktop pet - A cute kitten companion for macOS and Windows",
   "main": "main.js",
   "author": "yangr8640-eng",
@@ -49,7 +49,8 @@
         "zip"
       ],
       "icon": "assets/icon.png",
-      "category": "public.app-category.entertainment"
+      "category": "public.app-category.entertainment",
+      "artifactName": "${name}-${version}-${arch}_mac.${ext}"
     },
     "win": {
       "target": [
@@ -68,7 +69,7 @@
           ]
         }
       ],
-      "icon": "assets/icon.png",
+      "icon": "assets/icon.ico",
       "signAndEditExecutable": false
     },
     "nsis": {
@@ -78,9 +79,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "DesktopPet",
-      "installerIcon": "assets/icon.png",
-      "uninstallerIcon": "assets/icon.png",
-      "installerHeaderIcon": "assets/icon.png",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
       "deleteAppDataOnUninstall": false
     },
     "files": [
@@ -106,7 +107,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "electron": "^33.4.0",
+    "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "jest": "^30.4.2"
   }

@@ -1,57 +1,118 @@
 const { getChatWindow } = require('./windows');
 
+// Initialised by setupAutoUpdater() once app is ready
+let _isPackaged = false;
+
 let _autoUpdater = null;
 function getAutoUpdater() {
   if (!_autoUpdater) {
     const { autoUpdater } = require('electron-updater');
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
+
     _autoUpdater = autoUpdater;
   }
   return _autoUpdater;
 }
 
-function setupAutoUpdater() {
+// Track whether the current check was user-initiated (manual)
+let _manualCheck = false;
+
+function setupAutoUpdater(isPackaged) {
+  _isPackaged = !!isPackaged;
+
   const autoUpdater = getAutoUpdater();
 
   autoUpdater.on('checking-for-update', () => {
+    if (!_isPackaged && !_manualCheck) return;
     sendToChat('update-checking');
   });
 
   autoUpdater.on('update-available', (info) => {
+    _manualCheck = false;
     sendToChat('update-available', { version: info.version });
   });
 
   autoUpdater.on('update-not-available', () => {
-    sendToChat('update-not-available');
+    const wasManual = _manualCheck;
+    _manualCheck = false;
+    // Only forward to the renderer if the user manually triggered the check
+    if (wasManual) {
+      sendToChat('update-not-available');
+    }
   });
 
   autoUpdater.on('download-progress', (progress) => {
+    _manualCheck = false;
     sendToChat('update-download-progress', {
       percent: Math.round(progress.percent)
     });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    _manualCheck = false;
     sendToChat('update-downloaded', { version: info.version });
   });
 
+  // Track whether the auto-check has completed (to suppress startup error spam)
+  let _autoCheckDone = false;
+
   autoUpdater.on('error', (err) => {
+    _manualCheck = false;
+    if (!_isPackaged || !_autoCheckDone) {
+      console.warn('[auto-updater]', err.message);
+      return; // Silent during automatic startup check
+    }
     sendToChat('update-error', { message: err.message });
   });
 
-  // Check for updates 5 seconds after startup
+  // Check for updates shortly after startup (silent on dev / no-release)
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {
-      // Dev mode or no network — silently skip
+    autoUpdater.checkForUpdates().then(() => {
+      _autoCheckDone = true;
+    }).catch(() => {
+      _autoCheckDone = true;
     });
   }, 5000);
 }
 
+/**
+ * Manually trigger an update check. The user will see feedback even when
+ * no update is available (unlike the silent startup check).
+ */
+async function checkForUpdatesNow() {
+  try {
+    _manualCheck = true;
+    const autoUpdater = getAutoUpdater();
+    sendToChat('update-checking');
+
+    // 15-second timeout to prevent the banner from hanging forever
+    // when no GitHub release exists or the network is unreachable
+    await Promise.race([
+      autoUpdater.checkForUpdates(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+      )
+    ]);
+  } catch (err) {
+    _manualCheck = false;
+    if (err.message === 'TIMEOUT') {
+      // No release published yet or network issue — friendly dismiss
+      sendToChat('update-not-available');
+    } else {
+      sendToChat('update-error', { message: err.message });
+    }
+  }
+}
+
 function sendToChat(channel, data = {}) {
-  const chatWindow = getChatWindow();
-  if (chatWindow && !chatWindow.isDestroyed()) {
-    chatWindow.webContents.send(channel, data);
+  try {
+    const chatWindow = getChatWindow();
+    if (chatWindow && !chatWindow.isDestroyed()) {
+      chatWindow.webContents.send(channel, data);
+    }
+  } catch {
+    // Window might not be ready yet
   }
 }
 
@@ -65,4 +126,4 @@ function quitAndInstall() {
   getAutoUpdater().quitAndInstall();
 }
 
-module.exports = { setupAutoUpdater, downloadUpdate, quitAndInstall };
+module.exports = { setupAutoUpdater, downloadUpdate, quitAndInstall, checkForUpdatesNow };
