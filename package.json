@@ -49,7 +49,8 @@
         "zip"
       ],
       "icon": "assets/icon.png",
-      "category": "public.app-category.entertainment"
+      "category": "public.app-category.entertainment",
+      "artifactName": "${name}-${version}-${arch}_mac.${ext}"
     },
     "win": {
       "target": [

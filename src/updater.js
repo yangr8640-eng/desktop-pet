@@ -54,18 +54,24 @@ function setupAutoUpdater(isPackaged) {
     sendToChat('update-downloaded', { version: info.version });
   });
 
+  // Track whether the auto-check has completed (to suppress startup error spam)
+  let _autoCheckDone = false;
+
   autoUpdater.on('error', (err) => {
     _manualCheck = false;
-    if (!_isPackaged) {
+    if (!_isPackaged || !_autoCheckDone) {
       console.warn('[auto-updater]', err.message);
+      return; // Silent during automatic startup check
     }
     sendToChat('update-error', { message: err.message });
   });
 
   // Check for updates shortly after startup (silent on dev / no-release)
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {
-      // Dev mode or no network — silently skip
+    autoUpdater.checkForUpdates().then(() => {
+      _autoCheckDone = true;
+    }).catch(() => {
+      _autoCheckDone = true;
     });
   }, 5000);
 }
