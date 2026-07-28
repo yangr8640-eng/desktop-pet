@@ -249,6 +249,68 @@ window.Chat = window.Chat || {};
       });
     }
 
+    // ─── WeChat ───
+    const wechatToggle = C.elements.wechatToggle;
+    const wechatStatusArea = C.elements.wechatStatusArea;
+    const wechatQrContainer = C.elements.wechatQrContainer;
+    const wechatQrImage = C.elements.wechatQrImage;
+    const wechatConnected = C.elements.wechatConnected;
+    const wechatDisconnected = C.elements.wechatDisconnected;
+    const wechatReconnectBtn = C.elements.wechatReconnectBtn;
+
+    function renderWeChatStatus(status) {
+      if (!status) return;
+      wechatStatusArea.style.display = 'block';
+      if (status.qrCode || status.status === 'qr_pending' || status.status === 'qr_confirmed') {
+        wechatQrContainer.style.display = 'block';
+        if (status.qrCode) wechatQrImage.src = status.qrCode;
+        wechatConnected.style.display = 'none';
+        wechatDisconnected.style.display = 'none';
+      } else if (status.loggedIn || status.status === 'running') {
+        wechatQrContainer.style.display = 'none';
+        wechatConnected.style.display = 'block';
+        wechatDisconnected.style.display = 'none';
+        if (wechatToggle && !wechatToggle.checked) wechatToggle.checked = true;
+      } else {
+        wechatQrContainer.style.display = 'none';
+        wechatConnected.style.display = 'none';
+        wechatDisconnected.style.display = 'block';
+      }
+    }
+
+    if (wechatToggle) {
+      // Initialize from stored state
+      window.petAPI.getWeChatStatus().then(renderWeChatStatus);
+
+      wechatToggle.addEventListener('change', async () => {
+        const enabled = wechatToggle.checked;
+        const status = await window.petAPI.toggleWeChat(enabled);
+        if (enabled) {
+          wechatStatusArea.style.display = 'block';
+          renderWeChatStatus(status);
+        } else {
+          wechatStatusArea.style.display = 'none';
+        }
+      });
+    }
+
+    if (wechatReconnectBtn) {
+      wechatReconnectBtn.addEventListener('click', async () => {
+        wechatConnected.style.display = 'none';
+        wechatDisconnected.style.display = 'none';
+        wechatQrContainer.style.display = 'block';
+        const status = await window.petAPI.startWeChatLogin();
+        renderWeChatStatus(status);
+      });
+    }
+
+    // Listen for status changes from main process
+    if (window.petAPI.onWeChatStatusChange) {
+      window.petAPI.onWeChatStatusChange((status) => {
+        renderWeChatStatus(status);
+      });
+    }
+
     // Initialize expression buttons
     C.setupExpressionButtons();
   };

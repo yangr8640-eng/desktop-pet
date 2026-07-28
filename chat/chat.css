@@ -1378,3 +1378,9 @@ body.win32 .global-search-result:hover {
 body.win32 .tool-confirm-dialog {
   background: #1a1a1c;
 }
+
+/* WeChat QR code image */
+#wechatQrImage {
+  display: block;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}

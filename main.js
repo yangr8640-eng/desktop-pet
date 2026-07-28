@@ -6,6 +6,8 @@ const { registerIpcHandlers } = require('./src/ipc-handlers');
 const { setupAutoUpdater } = require('./src/updater');
 const { getTray, setTray, destroyTray } = require('./src/tray');
 const { syncDesktopIcon } = require('./src/desktop-icon');
+const { getWeChatStatus, initWeChat } = require('./src/wechat');
+const { startServer } = require('./src/server');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -91,6 +93,19 @@ app.whenReady().then(() => {
   registerGlobalShortcuts();
   setupAutoUpdater(app.isPackaged);
   syncDesktopIcon(store.get('activeTheme') || 'claude');
+
+  // Start local HTTP API server (for CLI, scripts, external tools)
+  startServer();
+
+  // Auto-start WeChat if enabled and logged in
+  const wechatSettings = store.get('wechat');
+  if (wechatSettings && wechatSettings.enabled) {
+    const status = getWeChatStatus();
+    if (status.loggedIn) {
+      console.log('[Main] 自动启动微信接入...');
+      initWeChat();
+    }
+  }
 
   app.setLoginItemSettings({
     openAtLogin: store.get('autoLaunch', true),
