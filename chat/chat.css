@@ -453,9 +453,10 @@ body.win32 .update-banner-dismiss:hover {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 14px;
-  margin: 0;
+  margin: 4px 8px;
   background: rgba(var(--accent-rgb), 0.2);
-  border-bottom: 0.5px solid rgba(var(--accent-rgb), 0.3);
+  border: 0.5px solid rgba(var(--accent-rgb), 0.3);
+  border-radius: 8px;
   animation: warningIn 0.4s ease;
   flex-shrink: 0;
 }
@@ -491,15 +492,16 @@ body.win32 .update-banner-dismiss:hover {
   background: transparent;
   color: var(--text2);
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   transition: all 0.12s;
 }
 .update-banner-dismiss:hover {
-  background: rgba(0,0,0,0.08);
+  background: rgba(var(--accent-rgb), 0.3);
   color: var(--text);
   border-color: rgba(var(--accent-rgb), 0.6);
 }

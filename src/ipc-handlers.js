@@ -126,7 +126,8 @@ function registerIpcHandlers() {
       const result = visionSwitched
         ? `🔀 已自动切换到 ${provider.name}（支持图片分析）\n\n${reply}`
         : reply;
-      event.sender.send('stream-chunk', { text: result, done: true });
+      event.sender.send('stream-chunk', { text: result });
+      event.sender.send('stream-chunk', { text: '', done: true });
       sendReplyNotification(result);
     } catch (err) {
       const providerName = visionSwitched ? provider.name : (getActiveModelProvider().name);
@@ -210,7 +211,8 @@ function registerIpcHandlers() {
         conv.updatedAt = new Date().toISOString();
         saveConversations(convs);
         chatWindow.webContents.send('messages-updated');
-        chatWindow.webContents.send('stream-chunk', { text: reply, done: true });
+        chatWindow.webContents.send('stream-chunk', { text: reply });
+        chatWindow.webContents.send('stream-chunk', { text: '', done: true });
         sendReplyNotification(reply);
       } catch (err) {
         chatWindow.webContents.send('stream-chunk', {
@@ -278,7 +280,8 @@ function registerIpcHandlers() {
       saveConversations(fileConvs);
 
       chatWindow.webContents.send('messages-updated');
-      chatWindow.webContents.send('stream-chunk', { text: reply, done: true });
+      chatWindow.webContents.send('stream-chunk', { text: reply });
+      chatWindow.webContents.send('stream-chunk', { text: '', done: true });
       sendReplyNotification(reply);
     } catch (err) {
       chatWindow.webContents.send('stream-chunk', { text: `分析文件时出错了: ${err.message}`, done: true, error: true });
@@ -576,7 +579,8 @@ function registerIpcHandlers() {
       conv.updatedAt = new Date().toISOString();
       if (conv.messages.length > 100) conv.messages.splice(0, conv.messages.length - 100);
       saveConversations(convs);
-      event.sender.send('stream-chunk', { text: reply, done: true });
+      event.sender.send('stream-chunk', { text: reply });
+      event.sender.send('stream-chunk', { text: '', done: true });
       sendReplyNotification(reply);
     } catch (err) {
       event.sender.send('stream-chunk', { text: `出错了: ${err.message}`, done: true, error: true });
