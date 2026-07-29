@@ -781,6 +781,42 @@ function registerIpcHandlers() {
     hideChatWindow();
   });
 
+  /* ─── WeChat ─── */
+  const { initWeChat, stopWeChat, getWeChatStatus, startLogin } = require('./wechat');
+
+  ipcMain.handle('get-wechat-status', () => {
+    return getWeChatStatus();
+  });
+
+  ipcMain.handle('start-wechat-login', async () => {
+    try {
+      await startLogin();
+      return getWeChatStatus();
+    } catch (err) {
+      return { error: err.message, status: 'disconnected' };
+    }
+  });
+
+  ipcMain.handle('toggle-wechat', async (_event, enabled) => {
+    if (enabled) {
+      const status = getWeChatStatus();
+      if (status.loggedIn) {
+        initWeChat();
+      } else {
+        try {
+          await startLogin();
+          initWeChat();
+        } catch (err) {
+          return { error: err.message, status: 'disconnected' };
+        }
+      }
+    } else {
+      stopWeChat();
+    }
+    store.set('wechat.enabled', enabled);
+    return getWeChatStatus();
+  });
+
   /* ─── Set Expression ─── */
   ipcMain.on('set-expression', (_event, name) => {
     const petWindow = getPetWindow();

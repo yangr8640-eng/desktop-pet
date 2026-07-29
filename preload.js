@@ -97,6 +97,16 @@ contextBridge.exposeInMainWorld('petAPI', {
   onFocusInput: (cb) => ipcRenderer.on('focus-input', () => cb()),
   onMessagesUpdated: (cb) => ipcRenderer.on('messages-updated', () => cb()),
 
+  // WeChat
+  getWeChatStatus: () => ipcRenderer.invoke('get-wechat-status'),
+  startWeChatLogin: () => ipcRenderer.invoke('start-wechat-login'),
+  toggleWeChat: (enabled) => ipcRenderer.invoke('toggle-wechat', enabled),
+  onWeChatStatusChange: (cb) => {
+    const handler = (_event, status) => cb(status);
+    ipcRenderer.on('wechat-status-change', handler);
+    return () => ipcRenderer.removeListener('wechat-status-change', handler);
+  },
+
   // System tools / Agent
   getSystemTools: () => ipcRenderer.invoke('get-system-tools'),
   confirmToolResponse: (data) => ipcRenderer.invoke('confirm-tool-response', data),

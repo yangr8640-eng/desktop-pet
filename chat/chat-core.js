@@ -64,7 +64,15 @@ window.Chat = window.Chat || {};
     confirmAllowBtn: document.getElementById('confirmAllowBtn'),
     confirmDenyBtn: document.getElementById('confirmDenyBtn'),
     // Expression bar
-    expressionBar: document.getElementById('expressionBar')
+    expressionBar: document.getElementById('expressionBar'),
+    // WeChat
+    wechatToggle: document.getElementById('wechatToggle'),
+    wechatStatusArea: document.getElementById('wechatStatusArea'),
+    wechatQrContainer: document.getElementById('wechatQrContainer'),
+    wechatQrImage: document.getElementById('wechatQrImage'),
+    wechatConnected: document.getElementById('wechatConnected'),
+    wechatDisconnected: document.getElementById('wechatDisconnected'),
+    wechatReconnectBtn: document.getElementById('wechatReconnectBtn')
   };
 
   // ─── Shared State ───

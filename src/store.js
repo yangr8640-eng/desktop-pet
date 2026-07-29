@@ -9,7 +9,17 @@ const store = new Store({
     activeModelProviderId: 'deepseek',
     searchEnabled: false,
     personalityPrompt: '',
-    activeTheme: 'claude'
+    activeTheme: 'claude',
+    wechat: {
+      botToken: '',
+      cursor: '',
+      ilinkBotId: '',
+      ilinkUserId: '',
+      baseUrl: '',
+      enabled: false,
+      autoStart: false
+    },
+    serverPort: 9876
   }
 });
 

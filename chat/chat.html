@@ -94,6 +94,29 @@
         </div>
         <div class="settings-divider"></div>
         <div class="settings-section">
+          <div class="settings-row">
+            <span class="settings-row-label">📱 微信接入 (ClawBot)</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="wechatToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div id="wechatStatusArea" style="display:none;">
+            <div id="wechatQrContainer" style="display:none;">
+              <img id="wechatQrImage" src="" alt="扫码登录" style="width:180px;height:180px;margin:8px 0;border-radius:8px;display:block;">
+              <p class="settings-hint">用微信扫描二维码，将桌宠接入微信</p>
+            </div>
+            <div id="wechatConnected" style="display:none;">
+              <span class="settings-info" style="color:#4CAF50;">● 已连接到微信</span>
+            </div>
+            <div id="wechatDisconnected" style="display:none;">
+              <span class="settings-info" style="color:#f44336;">● 未连接</span>
+              <button class="settings-save" id="wechatReconnectBtn" style="margin-top:6px;">🔄 重新连接</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
           <label class="settings-label">宠物外观</label>
           <select class="settings-input" id="themeSelect">
             <option value="orange">🧡 小橘 (橘猫)</option>
