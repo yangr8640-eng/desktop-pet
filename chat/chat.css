@@ -1378,3 +1378,26 @@ body.win32 .global-search-result:hover {
 body.win32 .tool-confirm-dialog {
   background: #1a1a1c;
 }
+
+/* ─── WeChat Status ─── */
+.wechat-status-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.wechat-status-badge {
+  font-size: 12px;
+  transition: color 0.3s;
+}
+.wechat-qr-container {
+  animation: fadeIn 0.3s ease;
+}
+.wechat-qr-container img {
+  display: block;
+  margin: 0 auto;
+}
+.wechat-tooltip {
+  font-size: 11px;
+  color: var(--text2);
+}

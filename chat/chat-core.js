@@ -64,7 +64,13 @@ window.Chat = window.Chat || {};
     confirmAllowBtn: document.getElementById('confirmAllowBtn'),
     confirmDenyBtn: document.getElementById('confirmDenyBtn'),
     // Expression bar
-    expressionBar: document.getElementById('expressionBar')
+    expressionBar: document.getElementById('expressionBar'),
+    // WeChat
+    wechatLoginBtn: document.getElementById('wechatLoginBtn'),
+    wechatStatusText: document.getElementById('wechatStatusText'),
+    wechatQRContainer: document.getElementById('wechatQRContainer'),
+    wechatQRImage: document.getElementById('wechatQRImage'),
+    wechatToggle: document.getElementById('wechatToggle'),
   };
 
   // ─── Shared State ───
@@ -83,7 +89,10 @@ window.Chat = window.Chat || {};
     pendingFiles: [],
     dropCounter: 0,
     // Tool confirm state
-    pendingToolConfirm: null
+    pendingToolConfirm: null,
+    // WeChat state
+    wechatStatus: 'disconnected',  // disconnected | connecting | connected | error
+    wechatQRDataUrl: null,
   };
 
   // ─── Typing Indicator (singleton) ───

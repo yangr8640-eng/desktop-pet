@@ -101,5 +101,15 @@ contextBridge.exposeInMainWorld('petAPI', {
   getSystemTools: () => ipcRenderer.invoke('get-system-tools'),
   confirmToolResponse: (data) => ipcRenderer.invoke('confirm-tool-response', data),
   onToolConfirm: (cb) => ipcRenderer.on('request-tool-confirm', (_event, data) => cb(data)),
-  onToolExecutionStatus: (cb) => ipcRenderer.on('tool-execution-status', (_event, data) => cb(data))
+  onToolExecutionStatus: (cb) => ipcRenderer.on('tool-execution-status', (_event, data) => cb(data)),
+
+  // WeChat Bridge
+  wechatLogin: () => ipcRenderer.invoke('wechat-login'),
+  wechatLogout: () => ipcRenderer.invoke('wechat-logout'),
+  wechatGetStatus: () => ipcRenderer.invoke('wechat-get-status'),
+  wechatToggle: (enabled) => ipcRenderer.invoke('wechat-toggle', enabled),
+  onWechatQR: (cb) => ipcRenderer.on('wechat-qr-code', (_event, dataUrl) => cb(dataUrl)),
+  onWechatStatus: (cb) => ipcRenderer.on('wechat-status-changed', (_event, data) => cb(data)),
+  onWechatLoginResult: (cb) => ipcRenderer.on('wechat-login-result', (_event, data) => cb(data)),
+  onWechatIncomingMessage: (cb) => ipcRenderer.on('wechat-incoming-message', (_event, data) => cb(data))
 });

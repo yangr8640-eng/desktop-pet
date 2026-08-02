@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "AI desktop pet - A cute kitten companion for macOS and Windows",
   "main": "main.js",
   "author": "yangr8640-eng",
@@ -103,7 +103,8 @@
     "mammoth": "^1.12.0",
     "marked": "^4.3.0",
     "pdf-parse": "^2.4.5",
-    "pdfkit": "^0.19.0"
+    "pdfkit": "^0.19.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

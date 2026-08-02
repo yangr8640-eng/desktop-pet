@@ -107,6 +107,26 @@
         </div>
         <div class="settings-divider"></div>
         <div class="settings-section">
+          <label class="settings-label">📱 微信桥接</label>
+          <div class="wechat-qr-container" id="wechatQRContainer" style="display:none;text-align:center;margin:8px 0;">
+            <img id="wechatQRImage" style="width:200px;height:200px;border-radius:8px;background:white;padding:8px;">
+            <p style="font-size:12px;color:var(--text2);margin-top:4px;">请用微信扫描二维码登录</p>
+          </div>
+          <div class="wechat-status-area">
+            <span class="wechat-status-badge" id="wechatStatusText">📱 微信桥接：未连接</span>
+            <span class="wechat-tooltip" id="wechatTooltip"></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+            <button class="settings-save" id="wechatLoginBtn">📱 扫码登录</button>
+            <label class="toggle-switch" style="margin-left:auto;">
+              <input type="checkbox" id="wechatToggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p class="settings-hint">开启后，微信消息会转发到桌宠 AI 处理并回复</p>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-section">
           <label class="settings-label">个性化语气</label>
           <textarea class="settings-input personality-textarea" id="personalityInput" placeholder="例如：请用霸道总裁的语气说话...&#10;例如：说英文回复我...&#10;例如：更毒舌、更调皮一点..."></textarea>
           <button class="settings-save" id="savePersonalityBtn">保存</button>
