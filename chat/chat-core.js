@@ -65,12 +65,13 @@ window.Chat = window.Chat || {};
     confirmDenyBtn: document.getElementById('confirmDenyBtn'),
     // Expression bar
     expressionBar: document.getElementById('expressionBar'),
-    // WeChat
+    // WeChat (OOP bridge)
     wechatLoginBtn: document.getElementById('wechatLoginBtn'),
     wechatStatusText: document.getElementById('wechatStatusText'),
     wechatQRContainer: document.getElementById('wechatQRContainer'),
     wechatQRImage: document.getElementById('wechatQRImage'),
     wechatToggle: document.getElementById('wechatToggle'),
+    wechatTooltip: document.getElementById('wechatTooltip')
   };
 
   // ─── Shared State ───

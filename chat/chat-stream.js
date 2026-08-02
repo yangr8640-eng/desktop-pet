@@ -19,6 +19,8 @@ window.Chat = window.Chat || {};
       if (data.done) {
         typingDots.classList.remove('show');
         if (!data.error) {
+          // Use data.text from the final chunk if no streaming chunks received
+          if (!fullContent && data.text) fullContent = data.text;
           C.renderMarkdownInPlace(assistantDiv, fullContent);
         }
         C.elements.sendBtn.disabled = false;

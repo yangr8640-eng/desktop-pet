@@ -11,7 +11,8 @@ const store = new Store({
     personalityPrompt: '',
     activeTheme: 'claude',
     wechatEnabled: false,
-    wechatAutoStart: false
+    wechatAutoStart: false,
+    serverPort: 9876
   }
 });
 

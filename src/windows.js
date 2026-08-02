@@ -8,7 +8,7 @@ const isMac = process.platform === 'darwin';
 let petWindow = null;
 let chatWindow = null;
 let isChatVisible = false;
-let chatWidth = 420;
+let chatWidth = 480;
 let chatHeight = 400;
 let savedChatBounds = null;
 let ignoreBlurUntil = 0;
@@ -58,7 +58,7 @@ function createPetWindow() {
 
 function createChatWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
-  chatWidth = 420;
+  chatWidth = 480;
   chatHeight = Math.round(screenHeight * 0.8);
   const chatY = Math.round((screenHeight - chatHeight) / 2);
 
