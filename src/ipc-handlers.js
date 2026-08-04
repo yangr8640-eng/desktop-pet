@@ -9,62 +9,7 @@ const { getPetWindow, getChatWindow, getChatVisible, showChatWindow, hideChatWin
 const { getTheme } = require('../themes');
 const { destroyTray } = require('./tray');
 
-function registerIpcHandlers(wechatBridge) {
-  /* ─── 微信桥接 IPC ─── */
-  ipcMain.handle('wechat-login', async () => {
-    try {
-      const chatWindow = getChatWindow();
-      const sendQR = (dataUrl) => {
-        if (chatWindow && !chatWindow.isDestroyed()) {
-          chatWindow.webContents.send('wechat-qr-code', dataUrl);
-        }
-      };
-      const sendStatus = (status, detail) => {
-        if (chatWindow && !chatWindow.isDestroyed()) {
-          chatWindow.webContents.send('wechat-status-changed', { status, detail });
-        }
-      };
-
-      wechatBridge.onQRCode(sendQR);
-      wechatBridge.onStatusChange((status, detail) => {
-        sendStatus(status, detail);
-        if (status === 'connected') {
-          store.set('wechatEnabled', true);
-          if (chatWindow && !chatWindow.isDestroyed()) {
-            chatWindow.webContents.send('wechat-login-result', {
-              success: true,
-              accountId: wechatBridge.getStatus().accountId,
-            });
-          }
-        }
-      });
-
-      const account = await wechatBridge.login(sendQR);
-      return { success: true, accountId: account.accountId };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  });
-
-  ipcMain.handle('wechat-logout', async () => {
-    wechatBridge.logout();
-    store.set('wechatEnabled', false);
-    return { success: true };
-  });
-
-  ipcMain.handle('wechat-get-status', async () => {
-    return wechatBridge.getStatus();
-  });
-
-  ipcMain.handle('wechat-toggle', async (_event, enabled) => {
-    store.set('wechatEnabled', enabled);
-    if (enabled) {
-      wechatBridge.start();
-    } else {
-      wechatBridge.stop();
-    }
-    return { success: true, enabled };
-  });
+function registerIpcHandlers() {
 
   function sendReplyNotification(fullContent) {
     if (!Notification.isSupported()) return;

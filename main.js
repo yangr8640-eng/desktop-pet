@@ -6,18 +6,13 @@ const { registerIpcHandlers } = require('./src/ipc-handlers');
 const { setupAutoUpdater } = require('./src/updater');
 const { getTray, setTray, destroyTray } = require('./src/tray');
 const { syncDesktopIcon } = require('./src/desktop-icon');
-const { WeChatBridge } = require('./src/wechat/wechat-bridge');
-const { startServer } = require('./src/server');
-
-// 创建全局桥接实例
-const wechatBridge = new WeChatBridge();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
 }
 
-registerIpcHandlers(wechatBridge);
+registerIpcHandlers();
 
 function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
@@ -96,14 +91,6 @@ app.whenReady().then(() => {
   registerGlobalShortcuts();
   setupAutoUpdater(app.isPackaged);
   syncDesktopIcon(store.get('activeTheme') || 'claude');
-
-  // Start local HTTP API server (for CLI, scripts, external tools)
-  startServer();
-
-  // 如果已启用微信桥接，自动开始轮询
-  if (store.get('wechatEnabled', false)) {
-    wechatBridge.start();
-  }
 
   app.setLoginItemSettings({
     openAtLogin: store.get('autoLaunch', true),

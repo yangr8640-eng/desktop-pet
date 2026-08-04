@@ -147,7 +147,7 @@ body.win32 .update-banner-dismiss:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 10px;
+  padding: 14px 16px;
   background: var(--surface);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -277,13 +277,13 @@ body.win32 .update-banner-dismiss:hover {
   background: rgba(255, 69, 58, 0.25);
   color: #FF453A;
 }
-.header-right { display: flex; gap: 2px; -webkit-app-region: no-drag; flex-shrink: 0; }
+.header-right { display: flex; gap: 4px; -webkit-app-region: no-drag; flex-shrink: 0; }
 .header-btn {
-  width: 26px; height: 26px;
-  border: none; border-radius: 5px;
+  width: 30px; height: 30px;
+  border: none; border-radius: 6px;
   background: transparent;
   color: var(--text2);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
@@ -486,10 +486,10 @@ body.win32 .update-banner-dismiss:hover {
 }
 .update-banner-btn:hover { background: var(--accent-dark); }
 .update-banner-dismiss {
-  padding: 4px 10px;
-  border: 1px solid rgba(var(--accent-rgb), 0.4);
-  border-radius: 5px;
-  background: transparent;
+  padding: 4px 16px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(var(--accent-rgb), 0.15);
   color: var(--text2);
   font-size: 12px;
   font-weight: 500;
@@ -497,13 +497,11 @@ body.win32 .update-banner-dismiss:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  white-space: nowrap;
   transition: all 0.12s;
 }
 .update-banner-dismiss:hover {
   background: rgba(var(--accent-rgb), 0.3);
   color: var(--text);
-  border-color: rgba(var(--accent-rgb), 0.6);
 }
 
 /* ─── API Key Warning ─── */
@@ -1354,18 +1352,18 @@ body.win32 .global-search-result:hover {
 .expression-bar {
   display: flex;
   align-items: center;
-  gap: 1px;
-  margin-right: 4px;
-  padding-right: 4px;
+  gap: 2px;
+  margin-right: 6px;
+  padding-right: 6px;
   border-right: 0.5px solid rgba(255,255,255,0.1);
 }
 .expr-btn {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1379,32 +1377,4 @@ body.win32 .global-search-result:hover {
 
 body.win32 .tool-confirm-dialog {
   background: #1a1a1c;
-}
-
-/* ─── WeChat Status ─── */
-.wechat-status-area {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0;
-}
-.wechat-status-badge {
-  font-size: 12px;
-  transition: color 0.3s;
-}
-.wechat-qr-container {
-  animation: fadeIn 0.3s ease;
-}
-.wechat-qr-container img {
-  display: block;
-  margin: 0 auto;
-}
-.wechat-tooltip {
-  font-size: 11px;
-  color: var(--text2);
-}
-/* WeChat QR code image */
-#wechatQRImage {
-  display: block;
-  border: 2px solid rgba(255, 255, 255, 0.15);
 }
